@@ -362,11 +362,18 @@
                   <strong>Important:</strong> The first person (marked "YOU") is your link. Copy it first, then share the others!
                 </div>
 
-                <button onClick={() => setGameState('active')} className="btn-success">
-                  Done - Start Competition
+                <{myContestantId === 0 && (
+                <button onClick={resetGame} className="btn-primary">
+                  Start New Competition
                 </button>
+              )}
+              
+              {myContestantId !== 0 && myContestantId !== null && (
+                <div style={{textAlign: 'center', padding: '1rem', background: '#f3f4f6', borderRadius: '8px'}}>
+                  <p style={{color: '#6b7280'}}>Only the organizer can start a new competition.</p>
+                </div>
+              )}
               </div>
-            )}
           </div>
         );
       }
