@@ -422,17 +422,61 @@
                 ))}
               </div>
 
-              {myContestantId === 0 && (
-                <button onClick={resetGame} className="btn-primary">
-                  Start New Competition
-                </button>
-              )}
-              
-              {myContestantId !== 0 && myContestantId !== null && (
-                <div style={{textAlign: 'center', padding: '1rem', background: '#f3f4f6', borderRadius: '8px'}}>
-                  <p style={{color: '#6b7280'}}>Only the organizer can start a new competition.</p>
-                </div>
-              )}
+              {/* Host (organiser) view */}
+{myContestantId === 0 && (
+  <div style={{textAlign: 'center', marginTop: '2rem'}}>
+    <div style={{
+      background: '#fef3c7',
+      border: '2px solid #f59e0b',
+      borderRadius: '12px',
+      padding: '1.5rem',
+      marginBottom: '1.5rem'
+    }}>
+      <h3 style={{fontSize: '1.5rem', marginBottom: '0.75rem'}}>🏆 Congratulations on Completing Your Culinary Quest! 🏆</h3>
+      <p style={{color: '#6b7280', marginBottom: '1rem'}}>
+        Your group’s results have been finalised.  
+        If you collected any entry contributions or organised a friendly prize,  
+        now’s the time to celebrate and reward your winner offline. 🍾
+      </p>
+      <p style={{color: '#9ca3af', fontSize: '0.9rem'}}>
+        (Culinary Quest does not handle or process any financial transactions.)
+      </p>
+    </div>
+
+    <button onClick={resetGame} className="btn-primary">
+      Start a New Competition →
+    </button>
+  </div>
+)}
+
+{/* Guest (non-host) view */}
+{myContestantId !== 0 && myContestantId !== null && (
+  <div style={{
+    textAlign: 'center',
+    padding: '2rem 1.5rem',
+    background: '#f3f4f6',
+    borderRadius: '12px',
+    border: '2px solid #e5e7eb',
+    marginTop: '2rem'
+  }}>
+    <h3 style={{fontSize: '1.5rem', marginBottom: '0.75rem'}}>🎉 Thank You for Participating! 🎉</h3>
+    <p style={{color: '#6b7280', marginBottom: '1rem'}}>
+      We hope you enjoyed hosting, tasting, and scoring each dinner party.  
+      Your competition has now finished — the winner has been crowned! 🏆
+    </p>
+    <p style={{color: '#6b7280', marginBottom: '1.5rem'}}>
+      If your group agreed on any friendly rewards or prizes,  
+      your organiser will handle that part outside the app.
+    </p>
+    <p style={{color: '#9ca3af', fontSize: '0.9rem', marginBottom: '1.5rem'}}>
+      (Culinary Quest does not handle or process any financial transactions.)
+    </p>
+    <p style={{color: '#ea580c', fontWeight: '600'}}>
+      Want to host your own Culinary Quest?  
+      <br />Download the app from the App Store soon!
+    </p>
+  </div>
+)}
             </div>
           </div>
         );
