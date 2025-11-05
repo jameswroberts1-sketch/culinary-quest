@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Culinary Quest</title>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -30,8 +29,6 @@
     .btn-secondary:hover:not(:disabled) { background: #c2410c; }
     .btn-success { background: #16a34a; color: white; width: 100%; }
     .list-item { display: flex; justify-content: space-between; padding: 0.75rem; background: #fef3c7; border-radius: 8px; margin-bottom: 0.5rem; }
-    .link-box { background: #fed7aa; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; }
-    .badge { background: #3b82f6; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; }
     .alert { padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem; }
     .alert-amber { background: #fef3c7; border: 2px solid #f59e0b; }
     .alert-green { background: #d1fae5; border: 2px solid #10b981; }
@@ -51,20 +48,15 @@
 
   <script type="text/babel">
     const { useState, useEffect } = React;
-    
-    // Storage shim for environments without window.storage
+
     if (!window.storage) {
       window.storage = {
         async get(key) {
-          const value = localStorage.getItem(key);
-          return value ? { value } : null;
+          const v = localStorage.getItem(key);
+          return v ? { value: v } : null;
         },
-        async set(key, value) {
-          localStorage.setItem(key, value);
-        },
-        async delete(key) {
-          localStorage.removeItem(key);
-        }
+        async set(key, v) { localStorage.setItem(key, v); },
+        async delete(key) { localStorage.removeItem(key); }
       };
     }
 
@@ -75,58 +67,42 @@
       const [currentRound, setCurrentRound] = useState(0);
       const [scores, setScores] = useState({});
       const [comments, setComments] = useState({});
+      const [hostingOrder, setHostingOrder] = useState([]);
       const [newContestantName, setNewContestantName] = useState('');
       const [myContestantId, setMyContestantId] = useState(null);
       const [tempScore, setTempScore] = useState('');
       const [tempComment, setTempComment] = useState('');
       const [copiedIndex, setCopiedIndex] = useState(null);
       const [showLinks, setShowLinks] = useState(false);
-      const [hostingOrder, setHostingOrder] = useState([]);
 
       useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const gameIdParam = urlParams.get('game');
-        const contestantIdParam = urlParams.get('c');
-        
-        if (contestantIdParam) {
-          setMyContestantId(parseInt(contestantIdParam));
-        }
-        
-        if (gameIdParam) {
-          setGameId(gameIdParam);
-          loadGame(gameIdParam);
-        } else {
-          const newGameId = 'culinaryquest_' + Math.random().toString(36).substr(2, 9);
-          setGameId(newGameId);
+        const params = new URLSearchParams(window.location.search);
+        const g = params.get('game');
+        const c = params.get('c');
+        if (c) setMyContestantId(parseInt(c));
+        if (g) { setGameId(g); loadGame(g); }
+        else {
+          const newId = 'culinaryquest_' + Math.random().toString(36).substr(2, 9);
+          setGameId(newId);
           setGameState('setup');
         }
       }, []);
 
-      const loadGame = async (gId) => {
-        try {
-          const gameData = await window.storage.get(gId);
-          if (gameData && gameData.value) {
-            const data = JSON.parse(gameData.value);
-            setContestants(data.contestants || []);
-            setCurrentRound(data.currentRound || 0);
-            setScores(data.scores || {});
-            setComments(data.comments || {});
-            setHostingOrder(data.hostingOrder || []);
-            setGameState(data.contestants.length > 0 ? 'active' : 'setup');
-          } else {
-            setGameState('setup');
-          }
-        } catch (error) {
-          setGameState('setup');
-        }
+      const loadGame = async (g) => {
+        const d = await window.storage.get(g);
+        if (d && d.value) {
+          const data = JSON.parse(d.value);
+          setContestants(data.contestants || []);
+          setCurrentRound(data.currentRound || 0);
+          setScores(data.scores || {});
+          setComments(data.comments || {});
+          setHostingOrder(data.hostingOrder || []);
+          setGameState(data.contestants?.length ? 'active' : 'setup');
+        } else setGameState('setup');
       };
 
       const saveGame = async (data) => {
-        try {
-          await window.storage.set(gameId, JSON.stringify(data));
-        } catch (error) {
-          console.error('Failed to save game:', error);
-        }
+        await window.storage.set(gameId, JSON.stringify(data));
       };
 
       const addContestant = () => {
@@ -137,20 +113,19 @@
         }
       };
 
-      const removeContestant = (index) => {
-        const updated = contestants.filter((_, i) => i !== index);
-        setContestants(updated);
+      const removeContestant = (i) => {
+        setContestants(contestants.filter((_, x) => x !== i));
       };
 
-      const getContestantLink = (contestantIndex) => {
-        const baseUrl = window.location.href.split('?')[0];
-        return `${baseUrl}?game=${gameId}&c=${contestantIndex}`;
+      const getContestantLink = (i) => {
+        const base = window.location.href.split('?')[0];
+        return `${base}?game=${gameId}&c=${i}`;
       };
 
-      const copyLink = (index) => {
-        const link = getContestantLink(index);
+      const copyLink = (i) => {
+        const link = getContestantLink(i);
         navigator.clipboard.writeText(link);
-        setCopiedIndex(index);
+        setCopiedIndex(i);
         setTimeout(() => setCopiedIndex(null), 2000);
       };
 
@@ -161,463 +136,225 @@
             const j = Math.floor(Math.random() * (i + 1));
             [order[i], order[j]] = [order[j], order[i]];
           }
-          
           const s = {}, c = {};
           contestants.forEach((_, h) => {
-            s[h] = {};
-            c[h] = {};
+            s[h] = {}; c[h] = {};
             contestants.forEach((__, x) => {
-              if (h !== x) {
-                s[h][x] = null;
-                c[h][x] = '';
-              }
+              if (h !== x) { s[h][x] = null; c[h][x] = ''; }
             });
           });
-          
-          setScores(s);
-          setComments(c);
-          setHostingOrder(order);
-          saveGame({
-            contestants,
-            currentRound: 0,
-            scores: s,
-            comments: c,
-            hostingOrder: order
-          });
+          setScores(s); setComments(c); setHostingOrder(order);
+          saveGame({ contestants, currentRound: 0, scores: s, comments: c, hostingOrder: order });
           setShowLinks(true);
         }
       };
 
       const submitScore = () => {
-        const currentHostIndex = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
-        
-        if (myContestantId === currentHostIndex) {
-          alert("As the host, you can't score yourself! Sit back and let your guests judge your culinary skills 😊");
+        const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
+        if (myContestantId === hostIdx) {
+          alert("Hosts can't score themselves.");
           return;
         }
-        
         if (myContestantId !== null && tempScore && parseInt(tempScore) >= 0 && parseInt(tempScore) <= 10) {
-          const updatedScores = { ...scores };
-          const updatedComments = { ...comments };
-          
-          updatedScores[currentHostIndex][myContestantId] = parseInt(tempScore);
-          updatedComments[currentHostIndex][myContestantId] = tempComment;
-          
-          setScores(updatedScores);
-          setComments(updatedComments);
-          
-          saveGame({
-            contestants,
-            currentRound,
-            scores: updatedScores,
-            comments: updatedComments,
-            hostingOrder
-          });
-          
-          setTempScore('');
-          setTempComment('');
+          const s = { ...scores }, c = { ...comments };
+          s[hostIdx][myContestantId] = parseInt(tempScore);
+          c[hostIdx][myContestantId] = tempComment;
+          setScores(s); setComments(c);
+          saveGame({ contestants, currentRound, scores: s, comments: c, hostingOrder });
+          setTempScore(''); setTempComment('');
         }
       };
 
       const nextRound = () => {
         if (currentRound < contestants.length - 1) {
-          const newRound = currentRound + 1;
-          setCurrentRound(newRound);
-          saveGame({
-            contestants,
-            currentRound: newRound,
-            scores,
-            comments,
-            hostingOrder
-          });
+          const newR = currentRound + 1;
+          setCurrentRound(newR);
+          saveGame({ contestants, currentRound: newR, scores, comments, hostingOrder });
         }
       };
 
-      const finishCompetition = () => {
-        setGameState('results');
-      };
+      const finishCompetition = () => setGameState('results');
 
       const resetGame = async () => {
-        try {
-          await window.storage.delete(gameId);
-          window.location.href = window.location.href.split('?')[0];
-        } catch (error) {
-          console.error('Failed to reset game:', error);
-        }
+        await window.storage.delete(gameId);
+        window.location.href = window.location.href.split('?')[0];
       };
 
       const calculateTotals = () => {
         const maxScore = (contestants.length - 1) * 10;
-        return contestants.map((contestant, index) => {
+        return contestants.map((n, i) => {
           let total = 0;
-          if (scores[index]) {
-            Object.values(scores[index]).forEach(score => {
-              if (score !== null) total += score;
-            });
-          }
-          return { name: contestant, total, maxScore };
+          if (scores[i]) Object.values(scores[i]).forEach(s => { if (s !== null) total += s; });
+          return { name: n, total, maxScore };
         }).sort((a, b) => b.total - a.total);
       };
 
-      const hasAllScored = (hostIndex) => {
-        if (!scores[hostIndex]) return false;
-        return Object.values(scores[hostIndex]).every(score => score !== null);
-      };
-
-      const allRoundsComplete = () => {
-        return contestants.every((_, index) => hasAllScored(index));
-      };
-
-      const hasMyScored = (hostIndex) => {
-        if (myContestantId === null) return false;
-        if (myContestantId === hostIndex) return false;
-        return scores[hostIndex]?.[myContestantId] !== null;
-      };
-
-      if (gameState === 'loading') {
-        return (
-          <div className="container">
-            <h1 className="title">Loading...</h1>
-          </div>
-        );
-      }
-
-      if (gameState === 'setup') {
-        return (
-          <div className="container">
-            <h1 className="title">🍽️ Culinary Quest</h1>
-            <p className="subtitle">Every Guest on a Quest</p>
-
-            {!showLinks ? (
-              <div className="card">
-                <h2 style={{marginBottom: '1rem'}}>Setup Your Competition</h2>
-                <p style={{color: '#6b7280', marginBottom: '1.5rem'}}>Add 2-6 guests who will take turns hosting dinner parties.</p>
-
-                <div className="input-group">
-                  <input
-                    type="text"
-                    value={newContestantName}
-                    onChange={(e) => setNewContestantName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addContestant()}
-                    placeholder={contestants.length === 0 ? "Your name (Organiser)" : `Guest ${contestants.length + 1}`}
-                    disabled={contestants.length >= 6}
-                  />
-                  <button
-                    onClick={addContestant}
-                    disabled={contestants.length >= 6 || !newContestantName.trim()}
-                    className="btn-secondary"
-                  >
-                    + Add
-                  </button>
-                </div>
-
-                <div>
-                  {contestants.map((contestant, index) => (
-                    <div key={index} className="list-item">
-                      <span>{index + 1}. {contestant}</span>
-                      <button onClick={() => removeContestant(index)} style={{background: '#ef4444', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '6px'}}>
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {contestants.length < 2 && (
-                  <p style={{color: '#6b7280', fontSize: '0.875rem', marginTop: '0.5rem'}}>Add at least 2 guests to start</p>
-                )}
-
-                <button
-                  onClick={startGame}
-                  disabled={contestants.length < 2}
-                  className="btn-primary"
-                >
-                  Create Competition
-                </button>
-              </div>
-            ) : (
-              <div className="card">
-                <h2 style={{marginBottom: '1rem'}}>🔗 Share Invite Links</h2>
-                <p style={{color: '#6b7280', marginBottom: '1.5rem'}}>
-                  Send each person their unique link. They'll use it to score dinner parties!
-                </p>
-
-                {contestants.map((contestant, index) => (
-                  <div key={index} className="link-box">
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
-                      <strong>
-                        {contestant}
-                        {index === 0 && <span className="badge">YOU</span>}
-                      </strong>
-                      <button onClick={() => copyLink(index)} className="btn-secondary btn-small" style={{fontSize: '0.875rem', padding: '0.5rem 1rem'}}>
-                        {copiedIndex === index ? '✓ Copied!' : '📋 Copy Link'}
-                      </button>
-                    </div>
-                    <div style={{fontSize: '0.75rem', color: '#78350f', wordBreak: 'break-all'}}>
-                      {getContestantLink(index)}
-                    </div>
-                  </div>
-                ))}
-
-                <div style={{background: '#dbeafe', padding: '1rem', borderRadius: '8px', marginTop: '1rem', marginBottom: '1rem'}}>
-                  <strong>Important:</strong> The first person (marked "YOU") is your link. Copy it first, then share the others!
-                </div>
-
-                <button onClick={() => setGameState('active')} className="btn-success">
-                  Done - Start Competition
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      }
+      const hasAllScored = (i) => scores[i] && Object.values(scores[i]).every(s => s !== null);
+      const allRoundsComplete = () => contestants.every((_, i) => hasAllScored(i));
+      const hasMyScored = (i) => myContestantId !== null && myContestantId !== i && scores[i]?.[myContestantId] !== null;
 
       if (gameState === 'results') {
         const results = calculateTotals();
-        const winner = results[0];
-
+        const topScore = results[0]?.total || 0;
+        const winners = results.filter(r => r.total === topScore);
+        const isTie = winners.length > 1;
         return (
           <div className="container">
             <h1 className="title">🏆 Final Results</h1>
-
             <div className="card">
               <div className="results-box">
-                <h2 style={{fontSize: '1.875rem', marginBottom: '0.5rem'}}>🎉 Winner 🎉</h2>
-                <p className="winner-name">{winner.name}</p>
-                <p style={{fontSize: '1.5rem', marginTop: '0.5rem'}}>Score: {winner.total}/{winner.maxScore}</p>
+                {isTie ? (
+                  <>
+                    <h2>🤝 It’s a Tie!</h2>
+                    {winners.map((w, i) => (
+                      <p key={i} className="winner-name">{w.name}</p>
+                    ))}
+                    <p style={{fontSize:'1.5rem'}}>Score: {topScore}/{winners[0].maxScore}</p>
+                  </>
+                ) : (
+                  <>
+                    <h2>🎉 Winner 🎉</h2>
+                    <p className="winner-name">{winners[0].name}</p>
+                    <p style={{fontSize:'1.5rem'}}>Score: {winners[0].total}/{winners[0].maxScore}</p>
+                  </>
+                )}
               </div>
-
-              <h3 style={{fontSize: '1.5rem', marginBottom: '1rem'}}>Final Leaderboard</h3>
-              {results.map((result, index) => (
-                <div key={index} className="leaderboard-item">
-                  <div>
-                    <span style={{fontSize: '1.5rem', color: '#9ca3af', marginRight: '1rem'}}>#{index + 1}</span>
-                    <span style={{fontSize: '1.25rem', fontWeight: '600'}}>{result.name}</span>
-                  </div>
-                  <span style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#ea580c'}}>{result.total}/{result.maxScore}</span>
+              <h3>Final Leaderboard</h3>
+              {results.map((r, i) => (
+                <div key={i} className="leaderboard-item">
+                  <div><span>#{i + 1}</span> <span>{r.name}</span></div>
+                  <span style={{color:'#ea580c', fontWeight:'bold'}}>{r.total}/{r.maxScore}</span>
                 </div>
               ))}
-
-              <div style={{marginTop: '2rem'}}>
-                <h3 style={{fontSize: '1.5rem', marginBottom: '1rem'}}>All Scores & Comments</h3>
-                {contestants.map((host, hostIndex) => (
-                  <div key={hostIndex} style={{background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>
-                    <h4 style={{fontWeight: 'bold', marginBottom: '0.75rem'}}>{host}'s Dinner Party</h4>
-                    {contestants.map((scorer, scorerIndex) => {
-                      if (hostIndex === scorerIndex) return null;
-                      const score = scores[hostIndex]?.[scorerIndex];
-                      const comment = comments[hostIndex]?.[scorerIndex];
+              <div style={{marginTop:'2rem'}}>
+                <h3>All Scores & Comments</h3>
+                {contestants.map((host, hI) => (
+                  <div key={hI} style={{background:'#fef3c7', padding:'1rem', borderRadius:'8px', marginBottom:'1rem'}}>
+                    <h4>{host}'s Dinner Party</h4>
+                    {contestants.map((scorer, sI) => {
+                      if (hI === sI) return null;
+                      const sc = scores[hI]?.[sI]; const cm = comments[hI]?.[sI];
                       return (
-                        <div key={scorerIndex} style={{background: 'white', padding: '0.75rem', borderRadius: '6px', marginBottom: '0.5rem'}}>
-                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem'}}>
-                            <span style={{fontWeight: '500'}}>{scorer}:</span>
-                            <span style={{fontWeight: 'bold', color: '#ea580c'}}>{score}/10</span>
+                        <div key={sI} style={{background:'white', padding:'0.75rem', borderRadius:'6px', marginBottom:'0.5rem'}}>
+                          <div style={{display:'flex', justifyContent:'space-between'}}>
+                            <span>{scorer}:</span>
+                            <span style={{color:'#ea580c', fontWeight:'bold'}}>{sc}/10</span>
                           </div>
-                          {comment && (
-                            <p style={{fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic'}}>"{comment}"</p>
-                          )}
+                          {cm && <p style={{fontStyle:'italic', color:'#6b7280'}}>"{cm}"</p>}
                         </div>
                       );
                     })}
                   </div>
                 ))}
               </div>
-
-              {/* Host (organiser) view */}
-{myContestantId === 0 && (
-  <div style={{textAlign: 'center', marginTop: '2rem'}}>
-    <div style={{
-      background: '#fef3c7',
-      border: '2px solid #f59e0b',
-      borderRadius: '12px',
-      padding: '1.5rem',
-      marginBottom: '1.5rem'
-    }}>
-      <h3 style={{fontSize: '1.5rem', marginBottom: '0.75rem'}}>🏆 Congratulations on Completing Your Culinary Quest! 🏆</h3>
-      <p style={{color: '#6b7280', marginBottom: '1rem'}}>
-        Your group’s results have been finalised.  
-        If you collected any entry contributions or organised a friendly prize,  
-        now’s the time to celebrate and reward your winner offline. 🍾
-      </p>
-      <p style={{color: '#9ca3af', fontSize: '0.9rem'}}>
-        (Culinary Quest does not handle or process any financial transactions.)
-      </p>
-    </div>
-
-    <button onClick={resetGame} className="btn-primary">
-      Start a New Competition →
-    </button>
-  </div>
-)}
-
-{/* Guest (non-host) view */}
-{myContestantId !== 0 && myContestantId !== null && (
-  <div style={{
-    textAlign: 'center',
-    padding: '2rem 1.5rem',
-    background: '#f3f4f6',
-    borderRadius: '12px',
-    border: '2px solid #e5e7eb',
-    marginTop: '2rem'
-  }}>
-    <h3 style={{fontSize: '1.5rem', marginBottom: '0.75rem'}}>🎉 Thank You for Participating! 🎉</h3>
-    <p style={{color: '#6b7280', marginBottom: '1rem'}}>
-      We hope you enjoyed hosting, tasting, and scoring each dinner party.  
-      Your competition has now finished — the winner has been crowned! 🏆
-    </p>
-    <p style={{color: '#6b7280', marginBottom: '1.5rem'}}>
-      If your group agreed on any friendly rewards or prizes,  
-      your organiser will handle that part outside the app.
-    </p>
-    <p style={{color: '#9ca3af', fontSize: '0.9rem', marginBottom: '1.5rem'}}>
-      (Culinary Quest does not handle or process any financial transactions.)
-    </p>
-    <p style={{color: '#ea580c', fontWeight: '600'}}>
-      Want to host your own Culinary Quest?  
-      <br />Download the app from the App Store soon!
-    </p>
-  </div>
-)}
+              {myContestantId === 0 && (
+                <button onClick={resetGame} className="btn-primary">Start New Competition</button>
+              )}
+              {myContestantId !== 0 && myContestantId !== null && (
+                <div style={{textAlign:'center', background:'#f3f4f6', padding:'1rem', borderRadius:'8px'}}>
+                  <p>Only the organiser can start a new competition.</p>
+                </div>
+              )}
             </div>
           </div>
         );
       }
 
-      // Active game
-      const currentHostIndex = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
-      const currentHost = contestants[currentHostIndex];
-      const currentRoundScores = scores[currentHostIndex] || {};
-      const scoredCount = Object.values(currentRoundScores).filter(s => s !== null).length;
-      const totalGuests = contestants.length - 1;
-      const myName = myContestantId !== null ? contestants[myContestantId] : null;
-      const isMyTurn = myContestantId !== null && myContestantId === currentHostIndex;
-      const iHaveScored = hasMyScored(currentHostIndex);
+      if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
+      if (gameState === 'setup') {
+        return (
+          <div className="container">
+            <h1 className="title">🍽️ Culinary Quest</h1>
+            <p className="subtitle">Every Guest on a Quest</p>
+            {!showLinks ? (
+              <div className="card">
+                <h2>Setup Your Competition</h2>
+                <input value={newContestantName} onChange={(e)=>setNewContestantName(e.target.value)} placeholder="Guest name" />
+                <button onClick={addContestant} disabled={!newContestantName.trim() || contestants.length>=6} className="btn-secondary">+ Add</button>
+                {contestants.map((n,i)=>(<div key={i} className="list-item"><span>{n}</span><button onClick={()=>removeContestant(i)} style={{background:'#ef4444',color:'white'}}>Remove</button></div>))}
+                <button onClick={startGame} disabled={contestants.length<2} className="btn-primary">Create Competition</button>
+              </div>
+            ):(
+              <div className="card">
+                <h2>Share Invite Links</h2>
+                {contestants.map((n,i)=>(
+                  <div key={i} className="list-item">
+                    <strong>{n}{i===0 && <span style={{background:'#3b82f6',color:'white',padding:'0.25rem 0.5rem',marginLeft:'0.5rem'}}>YOU</span>}</strong>
+                    <button onClick={()=>copyLink(i)} className="btn-secondary">{copiedIndex===i?'✓ Copied!':'📋 Copy'}</button>
+                  </div>
+                ))}
+                <button onClick={()=>setGameState('active')} className="btn-success">Done - Start Competition</button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      const hostIdx = hostingOrder.length>0?hostingOrder[currentRound]:currentRound;
+      const host = contestants[hostIdx];
+      const currentScores = scores[hostIdx]||{};
+      const scoredCount = Object.values(currentScores).filter(s=>s!==null).length;
+      const totalGuests = contestants.length-1;
+      const isHost = myContestantId===hostIdx;
+      const organiserView = myContestantId===0;
+      const iHaveScored = hasMyScored(hostIdx);
 
       return (
         <div className="container">
           <h1 className="title">🍽️ Culinary Quest</h1>
-          {myName && <p className="subtitle">Welcome, {myName}!</p>}
-
+          <p className="subtitle">Welcome, {contestants[myContestantId]}</p>
           <div className="card">
-            <h2 style={{textAlign: 'center', marginBottom: '1rem'}}>Round {currentRound + 1} of {contestants.length}</h2>
-            <div style={{background: '#fed7aa', padding: '1rem', borderRadius: '8px', textAlign: 'center', border: '2px solid #f59e0b', marginBottom: '1.5rem'}}>
-              <p style={{marginBottom: '0.25rem'}}>Tonight's Host:</p>
-              <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#ea580c'}}>{currentHost}</p>
+            <h2>Round {currentRound+1} of {contestants.length}</h2>
+            <div style={{background:'#fed7aa',padding:'1rem',borderRadius:'8px',marginBottom:'1rem'}}>
+              <p>Tonight's Host:</p>
+              <h2 style={{color:'#ea580c'}}>{host}</h2>
+            </div>
+            <div>
+              <p><strong>Scores Submitted:</strong> {scoredCount}/{totalGuests}</p>
+              <div className="progress-bar"><div className="progress-fill" style={{width:`${(scoredCount/totalGuests)*100}%`}}></div></div>
             </div>
 
-            <div style={{marginBottom: '1.5rem'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
-                <span style={{fontWeight: '600'}}>Scores Submitted:</span>
-                <span style={{fontWeight: 'bold', color: '#ea580c'}}>{scoredCount}/{totalGuests}</span>
-              </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{width: `${(scoredCount / totalGuests) * 100}%`}}></div>
-              </div>
-            </div>
-
-            {isMyTurn && (
-              <div className="alert alert-amber">
-                <p style={{fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem'}}>🍽️ You're Tonight's Host! 🍽️</p>
-                <p>As the host, you can't score yourself! Sit back and let others judge your dish 😋</p>
+            {isHost && <div className="alert alert-amber"><p>🍽️ You're Tonight's Host! Sit back and enjoy.</p></div>}
+            {!isHost && iHaveScored && <div className="alert alert-green"><p>✓ You’ve submitted your score.</p></div>}
+            {!isHost && !iHaveScored && (
+              <div className="card" style={{background:'#f3f4f6'}}>
+                <h3>Submit Your Score for {host}</h3>
+                <input type="number" placeholder="Score (0–10)" min="0" max="10" value={tempScore} onChange={(e)=>setTempScore(e.target.value)} />
+                <textarea rows="3" placeholder="Add your comments..." value={tempComment} onChange={(e)=>setTempComment(e.target.value)}></textarea>
+                <button onClick={submitScore} className="btn-primary">Submit Score</button>
               </div>
             )}
 
-            {!isMyTurn && iHaveScored && (
-              <div className="alert alert-green">
-                <p style={{fontSize: '1.125rem', fontWeight: 'bold'}}>
-                  ✓ You've submitted your score for this dinner party. Thanks for rating!
-                </p>
+            {organiserView && (
+              <div style={{marginTop:'1rem'}}>
+                <h4>Score Status</h4>
+                {contestants.map((n,i)=>{
+                  if (i===hostIdx) return null;
+                  return <div key={i} style={{padding:'0.5rem',borderBottom:'1px solid #e5e7eb'}}>{n}: {currentScores[i]!==null?'✅ Scored':'⏳ Pending'}</div>;
+                })}
               </div>
             )}
 
-            {!isMyTurn && !iHaveScored && myContestantId !== null && (
-              <div style={{background: '#fef3c7', padding: '1.5rem', borderRadius: '8px', border: '2px solid #f59e0b', marginBottom: '1.5rem'}}>
-                <h3 style={{marginBottom: '1rem'}}>Score This Dinner Party</h3>
-                <label style={{display: 'block', fontWeight: '600', marginBottom: '0.5rem'}}>Your Score (0-10)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={tempScore}
-                  onChange={(e) => setTempScore(e.target.value)}
-                  placeholder="Enter score out of 10"
-                />
-                <label style={{display: 'block', fontWeight: '600', marginBottom: '0.5rem'}}>💬 Comment (optional)</label>
-                <textarea
-                  value={tempComment}
-                  onChange={(e) => setTempComment(e.target.value)}
-                  placeholder="Share your thoughts on the evening..."
-                />
-                <button
-                  onClick={submitScore}
-                  disabled={!tempScore || parseInt(tempScore) < 0 || parseInt(tempScore) > 10}
-                  className="btn-secondary"
-                  style={{width: '100%'}}
-                >
-                  ⭐ Submit Score
-                </button>
+            {!organiserView && (
+              <div style={{marginTop:'1rem'}}>
+                <p style={{color:'#6b7280'}}>Waiting for others to submit scores...</p>
               </div>
             )}
 
-            <div style={{marginBottom: '1.5rem'}}>
-              <h3 style={{fontWeight: '600', marginBottom: '0.75rem'}}>Scoring Status:</h3>
-              {contestants.map((contestant, index) => {
-                if (contestant === currentHost) return null;
-                const hasScored = currentRoundScores[index] !== null;
-                return (
-                  <div key={index} style={{padding: '0.75rem', borderRadius: '8px', background: hasScored ? '#d1fae5' : '#f3f4f6', marginBottom: '0.5rem'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                      <span style={{fontWeight: '500'}}>{contestant}</span>
-                      {hasScored ? (
-                        <span style={{color: '#16a34a', fontWeight: '600'}}>✓ Scored</span>
-                      ) : (
-                        <span style={{color: '#9ca3af'}}>Pending</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {hasAllScored(currentHostIndex) && (
-              <div style={{textAlign: 'center'}}>
-                {currentRound < contestants.length - 1 ? (
-                  <button onClick={nextRound} className="btn-success">
-                    Next Dinner Party →
-                  </button>
-                ) : allRoundsComplete() && (
-                  <button onClick={finishCompetition} className="btn-primary">
-                    🏆 View Final Results
-                  </button>
-                )}
-              </div>
+            {organiserView && hasAllScored(hostIdx) && (
+              <button onClick={currentRound<contestants.length-1?nextRound:finishCompetition} className="btn-success">
+                {currentRound<contestants.length-1?'Next Dinner Party':'🏆 View Final Results'}
+              </button>
             )}
-          </div>
-
-          <div className="card">
-            <h3 style={{fontWeight: 'bold', marginBottom: '1rem'}}>Competition Schedule</h3>
-            {hostingOrder.map((hostIndex, roundNum) => (
-              <div 
-                key={roundNum}
-                className={`schedule-item ${
-                  roundNum === currentRound ? 'schedule-current' :
-                  roundNum < currentRound ? 'schedule-complete' :
-                  'schedule-pending'
-                }`}
-              >
-                <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                  <span>Round {roundNum + 1}: {contestants[hostIndex]}</span>
-                  {roundNum < currentRound && <span>✓ Complete</span>}
-                  {roundNum === currentRound && <span>← Current</span>}
-                </div>
-              </div>
-            ))}
+            {!organiserView && hasAllScored(hostIdx) && (
+              <div className="alert alert-green"><p>All scores submitted! Waiting for organiser...</p></div>
+            )}
           </div>
         </div>
       );
     }
 
-    ReactDOM.render(<CulinaryQuest />, document.getElementById('root'));
+    ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
   </script>
-
 </body>
 </html>
