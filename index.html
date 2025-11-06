@@ -220,39 +220,44 @@
     }, []);
 
     // load state
-    const loadGame = async (g) => {
-      try {
-        setSaving(true);
-        const d = await window.storage.get(g);
-        if (d && d.value) {
-        const parsed = JSON.parse(d.value);
+const loadGame = async (g) => {
+  try {
+    setSaving(true);
+    const d = await window.storage.get(g);
 
-          setContestants(parsed.contestants || []);
-          setAccepted(parsed.accepted || {});
-          setHostDates(parsed.hostDates || {});
-          setHostTimes(parsed.hostTimes || {});
-          setHostingOrder(parsed.hostingOrder || []);
-          setScores(parsed.scores || {});
-          setComments(parsed.comments || {});
-          setCurrentRound(parsed.currentRound || 0);
-          setGameStarted(parsed.gameStarted || false);
+    if (d && d.value) {
+      const parsed = JSON.parse(d.value);
 
-  // ✅ FIX: route guests to RSVP screen, organizer to setup
-        const isOrganizer = (myContestantId === 0);
-        const nextState = parsed.gameState
-          || (parsed.contestants && parsed.contestants.length
-          ? (isOrganizer ? 'setup' : 'active')
-          : 'setup');
-          setGameState(nextState);
-          } else {
-          setGameState('setup');
-          }
-        }
-      } catch (e) {
-        console.error('loadGame', e);
-        setGameState('setup');
-      } finally { setSaving(false); }
-    };
+      setContestants(parsed.contestants || []);
+      setAccepted(parsed.accepted || {});
+      setHostDates(parsed.hostDates || {});
+      setHostTimes(parsed.hostTimes || {});
+      setHostingOrder(parsed.hostingOrder || []);
+      setScores(parsed.scores || {});
+      setComments(parsed.comments || {});
+      setCurrentRound(parsed.currentRound || 0);
+      setGameStarted(parsed.gameStarted || false);
+
+      // ✅ Safe routing fix
+      let nextState = 'setup';
+      if (parsed.gameState) {
+        nextState = parsed.gameState;
+      } else if (parsed.contestants && parsed.contestants.length) {
+        // if we already have contestants, go to active for guests
+        nextState = (myContestantId === 0) ? 'setup' : 'active';
+      }
+
+      setGameState(nextState);
+    } else {
+      setGameState('setup');
+    }
+  } catch (e) {
+    console.error('loadGame error:', e);
+    setGameState('setup');
+  } finally {
+    setSaving(false);
+  }
+};
 
     // atomic save (persists gameState too)
     const saveGame = async (patch = {}) => {
