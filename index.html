@@ -225,29 +225,28 @@
         setSaving(true);
         const d = await window.storage.get(g);
         if (d && d.value) {
-  const parsed = JSON.parse(d.value);
+        const parsed = JSON.parse(d.value);
 
-  setContestants(parsed.contestants || []);
-  setAccepted(parsed.accepted || {});
-  setHostDates(parsed.hostDates || {});
-  setHostTimes(parsed.hostTimes || {});
-  setHostingOrder(parsed.hostingOrder || []);
-  setScores(parsed.scores || {});
-  setComments(parsed.comments || {});
-  setCurrentRound(parsed.currentRound || 0);
-  setGameStarted(parsed.gameStarted || false);
+          setContestants(parsed.contestants || []);
+          setAccepted(parsed.accepted || {});
+          setHostDates(parsed.hostDates || {});
+          setHostTimes(parsed.hostTimes || {});
+          setHostingOrder(parsed.hostingOrder || []);
+          setScores(parsed.scores || {});
+          setComments(parsed.comments || {});
+          setCurrentRound(parsed.currentRound || 0);
+          setGameStarted(parsed.gameStarted || false);
 
   // ✅ FIX: route guests to RSVP screen, organizer to setup
-  const isOrganizer = (myContestantId === 0);
-  const nextState = parsed.gameState
-    || (parsed.contestants && parsed.contestants.length
-        ? (isOrganizer ? 'setup' : 'active')
-        : 'setup');
-
-  setGameState(nextState);
-} else {
-  setGameState('setup');
-}
+        const isOrganizer = (myContestantId === 0);
+        const nextState = parsed.gameState
+          || (parsed.contestants && parsed.contestants.length
+          ? (isOrganizer ? 'setup' : 'active')
+          : 'setup');
+          setGameState(nextState);
+          } else {
+          setGameState('setup');
+          }
         }
       } catch (e) {
         console.error('loadGame', e);
