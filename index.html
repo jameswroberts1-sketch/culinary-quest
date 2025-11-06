@@ -1,360 +1,758 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Culinary Quest</title>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Culinary Quest — Calendar & RSVP</title>
+
+  <!-- React & Babel (dev-friendly) -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* Base layout & typography */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #334155, #57534e, #1e293b);
-      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg,#334155,#57534e,#1e293b);
       color: #1f2937;
+      min-height: 100vh;
     }
-    .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; }
-    .card { background: white; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-    .title { color: white; text-align: center; font-size: 2.5rem; margin-bottom: 1rem; }
-    .subtitle { color: white; text-align: center; font-size: 1.2rem; margin-bottom: 2rem; }
-    input, textarea { width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; }
-    input:focus, textarea:focus { outline: none; border-color: #ea580c; }
-    button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: #dc2626; color: white; width: 100%; margin-top: 0.5rem; }
-    .btn-primary:hover:not(:disabled) { background: #b91c1c; }
-    .btn-secondary { background: #ea580c; color: white; }
-    .btn-secondary:hover:not(:disabled) { background: #c2410c; }
-    .btn-success { background: #16a34a; color: white; width: 100%; }
-    .list-item { display: flex; justify-content: space-between; padding: 0.75rem; background: #fef3c7; border-radius: 8px; margin-bottom: 0.5rem; }
-    .alert { padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem; }
-    .alert-amber { background: #fef3c7; border: 2px solid #f59e0b; }
-    .alert-green { background: #d1fae5; border: 2px solid #10b981; }
-    .progress-bar { height: 1rem; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin: 1rem 0; }
-    .progress-fill { height: 100%; background: #ea580c; transition: width 0.3s; }
-    .schedule-item { padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; }
-    .schedule-current { background: #ea580c; color: white; font-weight: bold; }
-    .schedule-complete { background: #d1fae5; }
-    .schedule-pending { background: #f3f4f6; color: #6b7280; }
-    .results-box { background: #fef3c7; padding: 1.5rem; border-radius: 12px; border: 4px solid #f59e0b; margin-bottom: 2rem; text-align: center; }
-    .winner-name { font-size: 2.5rem; color: #ea580c; font-weight: bold; }
-    .leaderboard-item { display: flex; justify-content: space-between; padding: 1rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem; }
+    .container { max-width: 1000px; margin: 2rem auto; padding: 1rem; }
+    .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 10px 24px rgba(0,0,0,0.18); margin-bottom: 1rem; }
+    .title { color: #fff; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #fff; text-align: center; margin-bottom: 1rem; opacity: 0.9; }
+
+    /* Buttons */
+    button { cursor: pointer; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; }
+    .btn-primary { background: #dc2626; color: #fff; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-secondary { background: #ea580c; color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid #e5e7eb; color: #374151; }
+
+    /* small utility */
+    .muted { color: #6b7280; }
+    .flex { display:flex; gap:0.5rem; align-items:center; }
+    .space-between { display:flex; justify-content:space-between; align-items:center; }
+
+    /* calendar */
+    .calendar { width: 100%; max-width: 420px; margin: 0.75rem auto 0; }
+    .cal-header { display:flex; justify-content:space-between; align-items:center; padding:0.5rem; }
+    .cal-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; padding:0.5rem; }
+    .cal-day { height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; }
+    .cal-day.disabled { background:#f3f4f6; color:#9ca3af; cursor:not-allowed; }
+    .cal-day.available { background:#fff; cursor:pointer; border:1px solid #e5e7eb; }
+    .cal-day.selected { background:#ea580c; color:#fff; font-weight:700; }
+    .cal-weekdays { display:grid; grid-template-columns: repeat(7,1fr); gap:6px; padding:6px 0; color:#6b7280; font-size:0.85rem; text-align:center; }
+
+    /* RSVP area */
+    .rsvp-card { margin-top: 0.75rem; padding:1rem; border-radius:8px; background:#fef3c7; border:2px solid #f59e0b; }
+    .list { margin-top:0.75rem; }
+    .list-item { padding:0.6rem; border-radius:8px; background:#fff; display:flex; justify-content:space-between; align-items:center; border:1px solid #f1f5f9; margin-bottom:0.5rem; }
+    .badge { padding:0.25rem 0.5rem; border-radius:6px; font-size:0.8rem; color:#fff; background:#3b82f6; }
+
+    .progress-bar { height:10px; background:#e5e7eb; border-radius:8px; overflow:hidden; margin-top:0.5rem; }
+    .progress-fill { height:100%; background:#ea580c; transition: width 0.25s ease; }
+
+    /* small screens */
+    @media (max-width:600px) {
+      .calendar { max-width: 100%; }
+      .cal-day { height:36px; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+  const { useState, useEffect, useMemo } = React;
 
-    if (!window.storage) {
-      window.storage = {
-        async get(key) {
-          const v = localStorage.getItem(key);
-          return v ? { value: v } : null;
-        },
-        async set(key, v) { localStorage.setItem(key, v); },
-        async delete(key) { localStorage.removeItem(key); }
-      };
-    }
+  // fallback storage shim (localStorage)
+  if (!window.storage) {
+    window.storage = {
+      async get(k) {
+        const v = localStorage.getItem(k);
+        return v ? { value: v } : null;
+      },
+      async set(k, v) { localStorage.setItem(k, v); },
+      async delete(k) { localStorage.removeItem(k); }
+    };
+  }
 
-    function CulinaryQuest() {
-      const [gameState, setGameState] = useState('loading');
-      const [gameId, setGameId] = useState(null);
-      const [contestants, setContestants] = useState([]);
-      const [currentRound, setCurrentRound] = useState(0);
-      const [scores, setScores] = useState({});
-      const [comments, setComments] = useState({});
-      const [hostingOrder, setHostingOrder] = useState([]);
-      const [newContestantName, setNewContestantName] = useState('');
-      const [myContestantId, setMyContestantId] = useState(null);
-      const [tempScore, setTempScore] = useState('');
-      const [tempComment, setTempComment] = useState('');
-      const [copiedIndex, setCopiedIndex] = useState(null);
-      const [showLinks, setShowLinks] = useState(false);
+  function formatDateISO(date) {
+    // date is a Date object at local timezone; return YYYY-MM-DD
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2,'0');
+    const d = String(date.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
 
-      useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const g = params.get('game');
-        const c = params.get('c');
-        if (c) setMyContestantId(parseInt(c));
-        if (g) { setGameId(g); loadGame(g); }
-        else {
-          const newId = 'culinaryquest_' + Math.random().toString(36).substr(2, 9);
-          setGameId(newId);
-          setGameState('setup');
-        }
-      }, []);
+  function formatDateReadable(isoDate, time) {
+    if (!isoDate) return 'Pending';
+    const d = new Date(isoDate + (time ? 'T' + time : 'T00:00'));
+    const opts = { year:'numeric', month:'short', day:'numeric' };
+    const datePart = d.toLocaleDateString(undefined, opts);
+    const timePart = time ? ' @ ' + (new Date(d.getTime())).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '';
+    return datePart + timePart;
+  }
 
-      const loadGame = async (g) => {
+  function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }) {
+    // month displayed based on selectedDate or today
+    const today = new Date();
+    const [viewYear, setViewYear] = useState((selectedDate ? new Date(selectedDate) : today).getFullYear());
+    const [viewMonth, setViewMonth] = useState((selectedDate ? new Date(selectedDate) : today).getMonth());
+
+    useEffect(() => {
+      if (selectedDate) {
+        const sd = new Date(selectedDate);
+        setViewYear(sd.getFullYear());
+        setViewMonth(sd.getMonth());
+      }
+    }, [selectedDate]);
+
+    const firstOfMonth = new Date(viewYear, viewMonth, 1);
+    const weekdayOfFirst = firstOfMonth.getDay(); // 0..6 (Sun..Sat)
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    const prevMonth = () => {
+      if (viewMonth === 0) { setViewYear(viewYear-1); setViewMonth(11); }
+      else setViewMonth(viewMonth - 1);
+    };
+    const nextMonth = () => {
+      if (viewMonth === 11) { setViewYear(viewYear+1); setViewMonth(0); }
+      else setViewMonth(viewMonth + 1);
+    };
+
+    // generate grid: show blanks for leading days
+    const cells = [];
+    for (let i=0;i<weekdayOfFirst;i++) cells.push(null);
+    for (let d=1; d<=daysInMonth; d++) cells.push(new Date(viewYear, viewMonth, d));
+
+    const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const minISO = minDate ? formatDateISO(minDate) : formatDateISO(today);
+
+    return (
+      <div className="calendar card" aria-hidden={false}>
+        <div className="cal-header">
+          <button className="btn-ghost" onClick={prevMonth}>&larr;</button>
+          <div style={{fontWeight:700}}>{firstOfMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
+          <button className="btn-ghost" onClick={nextMonth}>&rarr;</button>
+        </div>
+
+        <div className="cal-weekdays">
+          {weekdayNames.map(w => <div key={w} style={{textAlign:'center'}}>{w}</div>)}
+        </div>
+
+        <div className="cal-grid">
+          {cells.map((cell, idx) => {
+            if (cell === null) return <div key={idx}></div>;
+            const cellISO = formatDateISO(cell);
+            const isPast = cellISO < minISO;
+            const isDisabled = isPast || disabledDates.has(cellISO);
+            const isSelected = selectedDate && formatDateISO(new Date(selectedDate)) === cellISO;
+            const cls = isDisabled ? 'cal-day disabled' : (isSelected ? 'cal-day selected' : 'cal-day available');
+            return (
+              <div
+                key={idx}
+                className={cls}
+                onClick={() => { if (!isDisabled) onSelect(cellISO); }}
+                title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}
+                style={{userSelect:'none'}}
+              >
+                {cell.getDate()}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  function CulinaryQuest() {
+    // core state (persisted)
+    const [gameState, setGameState] = useState('loading'); // setup | active | results
+    const [gameId, setGameId] = useState(null);
+    const [contestants, setContestants] = useState([]); // array of names
+    const [accepted, setAccepted] = useState({}); // { index: boolean }
+    const [hostDates, setHostDates] = useState({});  // { index: 'YYYY-MM-DD' }
+    const [hostTimes, setHostTimes] = useState({});  // { index: 'HH:MM' } optional
+    const [hostingOrder, setHostingOrder] = useState([]); // computed after all accept
+    const [currentRound, setCurrentRound] = useState(0);
+    const [scores, setScores] = useState({});
+    const [comments, setComments] = useState({});
+
+    // local UI state
+    const [newContestantName, setNewContestantName] = useState('');
+    const [myContestantId, setMyContestantId] = useState(null);
+    const [tempScore, setTempScore] = useState('');
+    const [tempComment, setTempComment] = useState('');
+    const [copiedIndex, setCopiedIndex] = useState(null);
+    const [showLinks, setShowLinks] = useState(false);
+
+    // load game id and my contestant id from URL
+    useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const g = params.get('game');
+      const c = params.get('c');
+      if (c !== null && c !== undefined) setMyContestantId(parseInt(c,10));
+      if (g) {
+        setGameId(g);
+        loadGame(g);
+      } else {
+        const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9);
+        setGameId(newId);
+        setGameState('setup');
+      }
+    }, []);
+
+    // persistence helpers
+    const loadGame = async (g) => {
+      try {
         const d = await window.storage.get(g);
         if (d && d.value) {
-          const data = JSON.parse(d.value);
-          setContestants(data.contestants || []);
-          setCurrentRound(data.currentRound || 0);
-          setScores(data.scores || {});
-          setComments(data.comments || {});
-          setHostingOrder(data.hostingOrder || []);
-          setGameState(data.contestants?.length ? 'active' : 'setup');
-        } else setGameState('setup');
-      };
-
-      const saveGame = async (data) => {
-        await window.storage.set(gameId, JSON.stringify(data));
-      };
-
-      const addContestant = () => {
-        if (newContestantName.trim() && contestants.length < 6) {
-          const updated = [...contestants, newContestantName.trim()];
-          setContestants(updated);
-          setNewContestantName('');
+          const parsed = JSON.parse(d.value);
+          setContestants(parsed.contestants || []);
+          setAccepted(parsed.accepted || {});
+          setHostDates(parsed.hostDates || {});
+          setHostTimes(parsed.hostTimes || {});
+          setHostingOrder(parsed.hostingOrder || []);
+          setCurrentRound(parsed.currentRound || 0);
+          setScores(parsed.scores || {});
+          setComments(parsed.comments || {});
+          setGameState(parsed.contestants && parsed.contestants.length ? 'active' : 'setup');
+        } else {
+          setGameState('setup');
         }
-      };
-
-      const removeContestant = (i) => {
-        setContestants(contestants.filter((_, x) => x !== i));
-      };
-
-      const getContestantLink = (i) => {
-        const base = window.location.href.split('?')[0];
-        return `${base}?game=${gameId}&c=${i}`;
-      };
-
-      const copyLink = (i) => {
-        const link = getContestantLink(i);
-        navigator.clipboard.writeText(link);
-        setCopiedIndex(i);
-        setTimeout(() => setCopiedIndex(null), 2000);
-      };
-
-      const startGame = () => {
-        if (contestants.length >= 2) {
-          const order = [...Array(contestants.length).keys()];
-          for (let i = order.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [order[i], order[j]] = [order[j], order[i]];
-          }
-          const s = {}, c = {};
-          contestants.forEach((_, h) => {
-            s[h] = {}; c[h] = {};
-            contestants.forEach((__, x) => {
-              if (h !== x) { s[h][x] = null; c[h][x] = ''; }
-            });
-          });
-          setScores(s); setComments(c); setHostingOrder(order);
-          saveGame({ contestants, currentRound: 0, scores: s, comments: c, hostingOrder: order });
-          setShowLinks(true);
-        }
-      };
-
-      const submitScore = () => {
-        const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
-        if (myContestantId === hostIdx) {
-          alert("Hosts can't score themselves.");
-          return;
-        }
-        if (myContestantId !== null && tempScore && parseInt(tempScore) >= 0 && parseInt(tempScore) <= 10) {
-          const s = { ...scores }, c = { ...comments };
-          s[hostIdx][myContestantId] = parseInt(tempScore);
-          c[hostIdx][myContestantId] = tempComment;
-          setScores(s); setComments(c);
-          saveGame({ contestants, currentRound, scores: s, comments: c, hostingOrder });
-          setTempScore(''); setTempComment('');
-        }
-      };
-
-      const nextRound = () => {
-        if (currentRound < contestants.length - 1) {
-          const newR = currentRound + 1;
-          setCurrentRound(newR);
-          saveGame({ contestants, currentRound: newR, scores, comments, hostingOrder });
-        }
-      };
-
-      const finishCompetition = () => setGameState('results');
-
-      const resetGame = async () => {
-        await window.storage.delete(gameId);
-        window.location.href = window.location.href.split('?')[0];
-      };
-
-      const calculateTotals = () => {
-        const maxScore = (contestants.length - 1) * 10;
-        return contestants.map((n, i) => {
-          let total = 0;
-          if (scores[i]) Object.values(scores[i]).forEach(s => { if (s !== null) total += s; });
-          return { name: n, total, maxScore };
-        }).sort((a, b) => b.total - a.total);
-      };
-
-      const hasAllScored = (i) => scores[i] && Object.values(scores[i]).every(s => s !== null);
-      const allRoundsComplete = () => contestants.every((_, i) => hasAllScored(i));
-      const hasMyScored = (i) => myContestantId !== null && myContestantId !== i && scores[i]?.[myContestantId] !== null;
-
-      if (gameState === 'results') {
-        const results = calculateTotals();
-        const topScore = results[0]?.total || 0;
-        const winners = results.filter(r => r.total === topScore);
-        const isTie = winners.length > 1;
-        return (
-          <div className="container">
-            <h1 className="title">🏆 Final Results</h1>
-            <div className="card">
-              <div className="results-box">
-                {isTie ? (
-                  <>
-                    <h2>🤝 It’s a Tie!</h2>
-                    {winners.map((w, i) => (
-                      <p key={i} className="winner-name">{w.name}</p>
-                    ))}
-                    <p style={{fontSize:'1.5rem'}}>Score: {topScore}/{winners[0].maxScore}</p>
-                  </>
-                ) : (
-                  <>
-                    <h2>🎉 Winner 🎉</h2>
-                    <p className="winner-name">{winners[0].name}</p>
-                    <p style={{fontSize:'1.5rem'}}>Score: {winners[0].total}/{winners[0].maxScore}</p>
-                  </>
-                )}
-              </div>
-              <h3>Final Leaderboard</h3>
-              {results.map((r, i) => (
-                <div key={i} className="leaderboard-item">
-                  <div><span>#{i + 1}</span> <span>{r.name}</span></div>
-                  <span style={{color:'#ea580c', fontWeight:'bold'}}>{r.total}/{r.maxScore}</span>
-                </div>
-              ))}
-              <div style={{marginTop:'2rem'}}>
-                <h3>All Scores & Comments</h3>
-                {contestants.map((host, hI) => (
-                  <div key={hI} style={{background:'#fef3c7', padding:'1rem', borderRadius:'8px', marginBottom:'1rem'}}>
-                    <h4>{host}'s Dinner Party</h4>
-                    {contestants.map((scorer, sI) => {
-                      if (hI === sI) return null;
-                      const sc = scores[hI]?.[sI]; const cm = comments[hI]?.[sI];
-                      return (
-                        <div key={sI} style={{background:'white', padding:'0.75rem', borderRadius:'6px', marginBottom:'0.5rem'}}>
-                          <div style={{display:'flex', justifyContent:'space-between'}}>
-                            <span>{scorer}:</span>
-                            <span style={{color:'#ea580c', fontWeight:'bold'}}>{sc}/10</span>
-                          </div>
-                          {cm && <p style={{fontStyle:'italic', color:'#6b7280'}}>"{cm}"</p>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-              {myContestantId === 0 && (
-                <button onClick={resetGame} className="btn-primary">Start New Competition</button>
-              )}
-              {myContestantId !== 0 && myContestantId !== null && (
-                <div style={{textAlign:'center', background:'#f3f4f6', padding:'1rem', borderRadius:'8px'}}>
-                  <p>Only the organiser can start a new competition.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
+      } catch (e) {
+        console.error('loadGame error', e);
+        setGameState('setup');
       }
+    };
 
-      if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
-      if (gameState === 'setup') {
-        return (
-          <div className="container">
-            <h1 className="title">🍽️ Culinary Quest</h1>
-            <p className="subtitle">Every Guest on a Quest</p>
-            {!showLinks ? (
-              <div className="card">
-                <h2>Setup Your Competition</h2>
-                <input value={newContestantName} onChange={(e)=>setNewContestantName(e.target.value)} placeholder="Guest name" />
-                <button onClick={addContestant} disabled={!newContestantName.trim() || contestants.length>=6} className="btn-secondary">+ Add</button>
-                {contestants.map((n,i)=>(<div key={i} className="list-item"><span>{n}</span><button onClick={()=>removeContestant(i)} style={{background:'#ef4444',color:'white'}}>Remove</button></div>))}
-                <button onClick={startGame} disabled={contestants.length<2} className="btn-primary">Create Competition</button>
-              </div>
-            ):(
-              <div className="card">
-                <h2>Share Invite Links</h2>
-                {contestants.map((n,i)=>(
-                  <div key={i} className="list-item">
-                    <strong>{n}{i===0 && <span style={{background:'#3b82f6',color:'white',padding:'0.25rem 0.5rem',marginLeft:'0.5rem'}}>YOU</span>}</strong>
-                    <button onClick={()=>copyLink(i)} className="btn-secondary">{copiedIndex===i?'✓ Copied!':'📋 Copy'}</button>
-                  </div>
-                ))}
-                <button onClick={()=>setGameState('active')} className="btn-success">Done - Start Competition</button>
-              </div>
-            )}
-          </div>
-        );
+    const saveGame = async (patch = {}) => {
+      const data = {
+        contestants, accepted, hostDates, hostTimes,
+        hostingOrder, currentRound, scores, comments,
+        ...patch
+      };
+      setContestants(data.contestants || contestants);
+      setAccepted(data.accepted || accepted);
+      setHostDates(data.hostDates || hostDates);
+      setHostTimes(data.hostTimes || hostTimes);
+      setHostingOrder(data.hostingOrder || hostingOrder);
+      setCurrentRound(data.currentRound ?? currentRound);
+      setScores(data.scores || scores);
+      setComments(data.comments || comments);
+      await window.storage.set(gameId, JSON.stringify(data));
+    };
+
+    // contestant management
+    const addContestant = () => {
+      if (!newContestantName.trim() || contestants.length >= 6) return;
+      const updated = [...contestants, newContestantName.trim()];
+      setContestants(updated);
+      setNewContestantName('');
+    };
+    const removeContestant = (i) => {
+      const updated = contestants.filter((_, idx) => idx !== i);
+      // remove associated metadata
+      const a = {...accepted}; delete a[i];
+      const hd = {...hostDates}; delete hd[i];
+      const ht = {...hostTimes}; delete ht[i];
+      setContestants(updated);
+      setAccepted(a); setHostDates(hd); setHostTimes(ht);
+      saveGame({ contestants: updated, accepted: a, hostDates: hd, hostTimes: ht });
+    };
+
+    const getContestantLink = (i) => {
+      const base = window.location.href.split('?')[0];
+      return `${base}?game=${gameId}&c=${i}`;
+    };
+    const copyLink = (i) => {
+      navigator.clipboard.writeText(getContestantLink(i));
+      setCopiedIndex(i);
+      setTimeout(()=>setCopiedIndex(null), 2000);
+    };
+
+    // RSVP + date selection
+    const selectDateFor = (index, isoDate, time) => {
+      // isoDate like YYYY-MM-DD, time like HH:MM optional
+      // ensure unique: check if another index already has isoDate
+      const alreadyTakenBy = Object.entries(hostDates).find(([k, v]) => v === isoDate && parseInt(k,10) !== index);
+      if (alreadyTakenBy) {
+        alert('This day is already booked by another host. Please pick a different date.');
+        return false;
       }
+      const hd = {...hostDates, [index]: isoDate};
+      const ht = {...hostTimes};
+      if (time) ht[index] = time; else delete ht[index];
+      setHostDates(hd); setHostTimes(ht);
+      saveGame({ hostDates: hd, hostTimes: ht });
+      return true;
+    };
 
-      const hostIdx = hostingOrder.length>0?hostingOrder[currentRound]:currentRound;
-      const host = contestants[hostIdx];
-      const currentScores = scores[hostIdx]||{};
-      const scoredCount = Object.values(currentScores).filter(s=>s!==null).length;
-      const totalGuests = contestants.length-1;
-      const isHost = myContestantId===hostIdx;
-      const organiserView = myContestantId===0;
-      const iHaveScored = hasMyScored(hostIdx);
+    const acceptInvitation = (index) => {
+      if (!hostDates[index]) {
+        alert('Please choose a date before accepting.');
+        return;
+      }
+      const a = {...accepted, [index]: true};
+      setAccepted(a);
+      saveGame({ accepted: a });
+    };
 
+    const unacceptInvitation = (index) => {
+      const a = {...accepted}; delete a[index];
+      setAccepted(a);
+      saveGame({ accepted: a });
+    };
+
+    // organiser controls
+    function canOrganiserStart() {
+      // all contestants must have accepted and have a date
+      if (contestants.length < 2) return false;
+      for (let i=0;i<contestants.length;i++) {
+        if (!accepted[i] || !hostDates[i]) return false;
+      }
+      // ensure unique dates
+      const dates = Object.values(hostDates || {});
+      const unique = new Set(dates);
+      return unique.size === dates.length;
+    }
+
+    const prepareHostingOrderChrono = () => {
+      // produce array of indices sorted by hostDates (YYYY-MM-DD) ascending
+      const list = contestants.map((_, idx) => ({ idx, date: hostDates[idx] || '' }));
+      list.sort((a,b) => {
+        if (a.date === b.date) return a.idx - b.idx; // stable tie-breaker
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return a.date.localeCompare(b.date);
+      });
+      const order = list.map(x => x.idx);
+      setHostingOrder(order);
+      saveGame({ hostingOrder: order });
+      return order;
+    };
+
+    const startGame = () => {
+      if (!canOrganiserStart()) {
+        alert('All participants must accept and choose unique dates before starting.');
+        return;
+      }
+      const order = prepareHostingOrderChrono();
+      // initialize scores/comments structure
+      const s = {}, c = {};
+      contestants.forEach((_, h) => {
+        s[h] = {}; c[h] = {};
+        contestants.forEach((__, x) => {
+          if (h !== x) { s[h][x] = null; c[h][x] = ''; }
+        });
+      });
+      setScores(s); setComments(c);
+      saveGame({ contestants, accepted, hostDates, hostTimes, hostingOrder: order, scores: s, comments: c, currentRound: 0 });
+      setGameState('active');
+    };
+
+    const submitScore = () => {
+      const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
+      if (myContestantId === hostIdx) {
+        alert("Hosts can't score themselves.");
+        return;
+      }
+      if (myContestantId !== null && tempScore !== '' && parseInt(tempScore,10) >= 0 && parseInt(tempScore,10) <= 10) {
+        const s = {...scores}; const cm = {...comments};
+        s[hostIdx][myContestantId] = parseInt(tempScore,10);
+        cm[hostIdx][myContestantId] = tempComment;
+        setScores(s); setComments(cm);
+        saveGame({ scores: s, comments: cm });
+        setTempScore(''); setTempComment('');
+      }
+    };
+
+    const hasAllScored = (hostIndex) => {
+      if (!scores[hostIndex]) return false;
+      return Object.values(scores[hostIndex]).every(v => v !== null);
+    };
+    const allRoundsComplete = () => contestants.every((_,i) => hasAllScored(i));
+
+    const finishCompetition = () => setGameState('results');
+
+    const resetGame = async () => {
+      await window.storage.delete(gameId);
+      window.location.href = window.location.href.split('?')[0];
+    };
+
+    // totals & tie detection
+    const calculateTotals = () => {
+      const maxScore = (contestants.length - 1) * 10;
+      const totals = contestants.map((name, idx) => {
+        let total = 0;
+        if (scores[idx]) Object.values(scores[idx]).forEach(sc => { if (sc !== null) total += sc; });
+        return { name, total, index: idx, maxScore };
+      });
+      totals.sort((a,b) => b.total - a.total);
+      return totals;
+    };
+
+    // derived helpers
+    const organiser = myContestantId === 0;
+    const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
+    const hostName = contestants[hostIdx] ?? null;
+    const currentScores = scores[hostIdx] || {};
+    const scoredCount = Object.values(currentScores).filter(s => s !== null).length;
+    const totalGuests = Math.max(0, contestants.length - 1);
+    const iHaveScored = (myContestantId !== null && myContestantId !== hostIdx && scores[hostIdx]?.[myContestantId] !== null);
+
+    // prepare disabledDates for calendar: any chosen hostDates except the current player's own choice
+    const disabledDatesSet = useMemo(() => {
+      const set = new Set();
+      Object.entries(hostDates).forEach(([k,v])=>{
+        if (v) set.add(v);
+      });
+      return set;
+    }, [hostDates]);
+
+    // UI: if user hasn't accepted yet, show RSVP view for their index
+    const myAccepted = myContestantId !== null ? !!accepted[myContestantId] : false;
+    const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
+    const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
+
+    // On load, ensure hostingOrder is sorted if present and consistent
+    useEffect(()=> {
+      // if hostingOrder absent but all accepted and have dates, auto-prepare
+      if (gameState === 'active' && (!hostingOrder || hostingOrder.length === 0)) {
+        if (canOrganiserStart()) {
+          prepareHostingOrderChrono();
+        }
+      }
+    }, [gameState, accepted, hostDates]);
+
+    // rendering
+    if (gameState === 'loading') {
+      return <div className="container"><h1 className="title">Loading...</h1></div>;
+    }
+
+    // SETUP: initial collection & link-sharing — organiser sees RSVP table here too
+    if (gameState === 'setup') {
       return (
         <div className="container">
           <h1 className="title">🍽️ Culinary Quest</h1>
-          <p className="subtitle">Welcome, {contestants[myContestantId]}</p>
+          <p className="subtitle">Every Guest on a Quest</p>
+
+          {!showLinks ? (
+            <div className="card">
+              <h2>Setup Your Competition</h2>
+              <div style={{display:'flex', gap:8, marginTop:8}}>
+                <input value={newContestantName} onChange={e=>setNewContestantName(e.target.value)} placeholder="Guest name" />
+                <button onClick={addContestant} className="btn-secondary" disabled={!newContestantName.trim() || contestants.length>=6}>+ Add</button>
+              </div>
+
+              <div className="list" style={{marginTop:12}}>
+                {contestants.map((n, i) => (
+                  <div key={i} className="list-item">
+                    <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                      <div style={{fontWeight:600}}>{i+1}. {n}</div>
+                      {i===0 && <div className="badge">Organiser</div>}
+                    </div>
+                    <div style={{display:'flex', gap:8}}>
+                      <button onClick={()=>removeContestant(i)} className="btn-ghost">Remove</button>
+                      <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{marginTop:12}}>
+                <button onClick={()=>setShowLinks(true)} className="btn-success">Share Links & RSVP</button>
+              </div>
+            </div>
+          ) : (
+            <div className="card">
+              <h2>🔗 Invite Links & RSVP</h2>
+              <p className="muted">Send each player their unique link. Each player must accept and choose a hosting date before the organiser can start.</p>
+
+              <div className="list" style={{marginTop:12}}>
+                {contestants.map((n,i)=>(
+                  <div key={i} className="list-item">
+                    <div>
+                      <div style={{fontWeight:600}}>{n} {i===0 && <span style={{fontSize:'0.8rem', color:'#fff', background:'#3b82f6', padding:'0.15rem 0.4rem', borderRadius:6, marginLeft:8}}>YOU</span>}</div>
+                      <div style={{fontSize:'0.85rem'}} className="muted">
+                        { organiser ? (accepted[i] ? `Accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : 'Pending RSVP') : (i === myContestantId ? (accepted[i] ? `You accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : 'Pending your RSVP') : '')}
+                      </div>
+                    </div>
+                    <div style={{display:'flex', gap:8}}>
+                      <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{marginTop:12}}>
+                <button onClick={()=>setGameState('active')} className="btn-success">Done — Wait for RSVPs</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ACTIVE: either show RSVP accept screen (if this player hasn't accepted yet) OR the active game UI
+    if (gameState === 'active' && myContestantId !== null && !myAccepted) {
+      // show RSVP/accept flow for this player
+      // prepare disabled set excluding this player's own current choice (so they can reselect)
+      const disabledForMe = new Set(Object.entries(hostDates)
+        .filter(([k,v]) => parseInt(k,10) !== myContestantId && v)
+        .map(([,v]) => v)
+      );
+      const today = new Date(); today.setHours(0,0,0,0);
+
+      return (
+        <div className="container">
+          <h1 className="title">🍽️ Invitation</h1>
           <div className="card">
-            <h2>Round {currentRound+1} of {contestants.length}</h2>
-            <div style={{background:'#fed7aa',padding:'1rem',borderRadius:'8px',marginBottom:'1rem'}}>
-              <p>Tonight's Host:</p>
-              <h2 style={{color:'#ea580c'}}>{host}</h2>
+            <h2>You're invited, {contestants[myContestantId]}!</h2>
+            <p className="muted">Please choose the date you would like to host your dinner. Time is optional but date is required. Only one booking per day is allowed.</p>
+
+            <Calendar
+              selectedDate={mySelectedDate}
+              onSelect={(isoDate) => selectDateFor(myContestantId, isoDate, hostTimes[myContestantId])}
+              disabledDates={disabledForMe}
+              minDate={today}
+            />
+
+            <div style={{marginTop:12}}>
+              <label className="muted" style={{display:'block', marginBottom:6}}>Optional time</label>
+              <input type="time" value={mySelectedTime || ''} onChange={(e)=>{ const t = e.target.value || undefined; const ht = {...hostTimes}; if (t) ht[myContestantId] = t; else delete ht[myContestantId]; setHostTimes(ht); saveGame({ hostTimes: ht }); }} />
             </div>
-            <div>
-              <p><strong>Scores Submitted:</strong> {scoredCount}/{totalGuests}</p>
-              <div className="progress-bar"><div className="progress-fill" style={{width:`${(scoredCount/totalGuests)*100}%`}}></div></div>
+
+            <div style={{marginTop:12, display:'flex', gap:8}}>
+              <button className="btn-primary" onClick={()=>{ if (!hostDates[myContestantId]) { alert('Please pick a date first'); return; } acceptInvitation(myContestantId); }} disabled={!hostDates[myContestantId]}>✅ Accept Invitation</button>
+              <button className="btn-ghost" onClick={()=>{ /* allow editing: remove chosen date */ setHostDates(prev=>{ const copy={...prev}; delete copy[myContestantId]; saveGame({ hostDates: copy }); setHostDates(copy); return copy; }); }}>Clear</button>
             </div>
 
-            {isHost && <div className="alert alert-amber"><p>🍽️ You're Tonight's Host! Sit back and enjoy.</p></div>}
-            {!isHost && iHaveScored && <div className="alert alert-green"><p>✓ You’ve submitted your score.</p></div>}
-            {!isHost && !iHaveScored && (
-              <div className="card" style={{background:'#f3f4f6'}}>
-                <h3>Submit Your Score for {host}</h3>
-                <input type="number" placeholder="Score (0–10)" min="0" max="10" value={tempScore} onChange={(e)=>setTempScore(e.target.value)} />
-                <textarea rows="3" placeholder="Add your comments..." value={tempComment} onChange={(e)=>setTempComment(e.target.value)}></textarea>
-                <button onClick={submitScore} className="btn-primary">Submit Score</button>
-              </div>
-            )}
-
-            {organiserView && (
-              <div style={{marginTop:'1rem'}}>
-                <h4>Score Status</h4>
-                {contestants.map((n,i)=>{
-                  if (i===hostIdx) return null;
-                  return <div key={i} style={{padding:'0.5rem',borderBottom:'1px solid #e5e7eb'}}>{n}: {currentScores[i]!==null?'✅ Scored':'⏳ Pending'}</div>;
-                })}
-              </div>
-            )}
-
-            {!organiserView && (
-              <div style={{marginTop:'1rem'}}>
-                <p style={{color:'#6b7280'}}>Waiting for others to submit scores...</p>
-              </div>
-            )}
-
-            {organiserView && hasAllScored(hostIdx) && (
-              <button onClick={currentRound<contestants.length-1?nextRound:finishCompetition} className="btn-success">
-                {currentRound<contestants.length-1?'Next Dinner Party':'🏆 View Final Results'}
-              </button>
-            )}
-            {!organiserView && hasAllScored(hostIdx) && (
-              <div className="alert alert-green"><p>All scores submitted! Waiting for organiser...</p></div>
-            )}
+            <div style={{marginTop:12}}>
+              {hostDates[myContestantId] && <div className="rsvp-card">Your chosen date: <strong>{formatDateReadable(hostDates[myContestantId], hostTimes[myContestantId])}</strong></div>}
+            </div>
           </div>
         </div>
       );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
+    // ACTIVE game (main scoreboard / scoring UI)
+    if (gameState === 'active') {
+      const totals = calculateTotals();
+      const disabledForCalendar = new Set(Object.entries(hostDates).map(([k,v]) => v));
+      return (
+        <div className="container">
+          <h1 className="title">🍽️ Culinary Quest</h1>
+          <p className="subtitle">Welcome{myContestantId !== null ? `, ${contestants[myContestantId]}` : ''}!</p>
+
+          <div className="card">
+            <h2>Round {currentRound + 1} of {contestants.length}</h2>
+            <div style={{marginTop:8, marginBottom:12}}>
+              <div className="space-between">
+                <div>
+                  <div style={{fontSize: '0.95rem', color:'#6b7280'}}>Tonight's Host</div>
+                  <div style={{fontWeight:700, fontSize:'1.25rem'}}>{hostName}</div>
+                  <div className="muted" style={{fontSize:'0.9rem', marginTop:4}}>
+                    { organiser ? `Host's date: ${hostDates[hostIdx] ? formatDateReadable(hostDates[hostIdx], hostTimes[hostIdx]) : 'Pending'}` : (myAccepted ? '' : '') }
+                  </div>
+                </div>
+                <div style={{width: '40%'}}>
+                  <div style={{fontSize:'0.85rem', color:'#6b7280'}}>Progress</div>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    <div style={{flex:1}}>
+                      <div className="progress-bar"><div className="progress-fill" style={{width: `${totalGuests === 0 ? 0 : (scoredCount / totalGuests) * 100}%`}}></div></div>
+                    </div>
+                    <div style={{fontWeight:700, color:'#ea580c'}}>{scoredCount}/{totalGuests}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* scoring interaction */}
+            { myContestantId !== null && myContestantId !== hostIdx && !iHaveScored && (
+              <div className="card" style={{background:'#fef3c7', marginBottom:12}}>
+                <h3>Score tonight's host: {hostName}</h3>
+                <div style={{marginTop:8}}>
+                  <label className="muted">Your score (0–10)</label>
+                  <input type="number" min="0" max="10" value={tempScore} onChange={e=>setTempScore(e.target.value)} />
+                </div>
+                <div style={{marginTop:8}}>
+                  <label className="muted">Comment (optional)</label>
+                  <textarea rows="3" value={tempComment} onChange={e=>setTempComment(e.target.value)} />
+                </div>
+                <div style={{marginTop:8}}>
+                  <button className="btn-primary" onClick={submitScore} disabled={tempScore === '' || parseInt(tempScore,10) < 0 || parseInt(tempScore,10) > 10}>Submit Score</button>
+                </div>
+              </div>
+            )}
+
+            { myContestantId === hostIdx && (
+              <div className="alert" style={{background:'#fef3c7', border:'2px solid #f59e0b'}}>🍽️ You're tonight's host — you don't score yourself. Sit back and enjoy!</div>
+            )}
+
+            {/* Host-only detailed status */}
+            { organiser ? (
+              <div style={{marginTop:12}}>
+                <h4>RSVP & Schedule (Organiser view)</h4>
+                <div className="list" style={{marginTop:8}}>
+                  {contestants.map((n,i) => (
+                    <div key={i} className="list-item">
+                      <div>
+                        <div style={{fontWeight:600}}>{n} {i===0 && <span className="badge">Organiser</span>}</div>
+                        <div className="muted" style={{fontSize:'0.9rem'}}>
+                          {accepted[i] ? `Accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : (hostDates[i] ? `Selected date — ${formatDateReadable(hostDates[i], hostTimes[i])} (not accepted)` : 'No date chosen')}
+                        </div>
+                      </div>
+                      <div style={{display:'flex', gap:8}}>
+                        {/* allow organiser to clear or edit someone's date before starting */}
+                        <button className="btn-ghost" onClick={()=>{ if (!confirm('Clear this participant\'s selected date?')) return; const hd={...hostDates}; delete hd[i]; setHostDates(hd); saveGame({ hostDates: hd }); }}>Clear</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // guest view: only show progress and (if they already accepted) their chosen date
+              <div style={{marginTop:12}}>
+                <h4>RSVP & Schedule</h4>
+                <div style={{marginTop:8}}>
+                  <div className="muted">Your RSVP</div>
+                  <div style={{marginTop:6}} className="list-item">{ myAccepted ? <div>Accepted — {formatDateReadable(hostDates[myContestantId], hostTimes[myContestantId])}</div> : <div>Not accepted</div> }</div>
+                  <div style={{marginTop:8}} className="muted">Group progress</div>
+                  <div style={{marginTop:6}} className="list-item"><div>{scoredCount}/{totalGuests} submitted</div></div>
+                </div>
+              </div>
+            )}
+
+            {/* organiser-only start button when all accepted + unique dates */}
+            <div style={{marginTop:12}}>
+              { organiser ? (
+                <div style={{display:'flex', gap:8}}>
+                  <button className="btn-success" onClick={() => {
+                    if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
+                    // prepare order preview then start
+                    const order = prepareHostingOrderChrono();
+                    if (!confirm('Start competition with schedule:\n' + order.map(i => `${contestants[i]} — ${formatDateReadable(hostDates[i], hostTimes[i])}`).join('\n'))) return;
+                    startGame();
+                  }} disabled={!canOrganiserStart()}>Start Competition</button>
+
+                  <button className="btn-ghost" onClick={() => {
+                    // allow organiser to pick their own date here (if not set)
+                    // show small calendar overlay? for simplicity, scroll to top where RSVP is accessible via links.
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    alert('To edit dates, use the RSVP links panel (Share Links) or clear dates in the organiser schedule.');
+                  }}>Manage Dates</button>
+                </div>
+              ) : (
+                <div className="muted">Waiting for the organiser to start the competition once all guests accept.</div>
+              )}
+            </div>
+
+          </div>
+
+          {/* schedule card */}
+          <div className="card">
+            <h3>Competition Schedule (chronological)</h3>
+            <div style={{marginTop:12}}>
+              { (hostingOrder && hostingOrder.length) ? hostingOrder.map((idx, i) => (
+                <div key={i} className="list-item">
+                  <div>
+                    <div style={{fontWeight:600}}>{i+1}. {contestants[idx]}</div>
+                    <div className="muted">{ formatDateReadable(hostDates[idx], hostTimes[idx]) }</div>
+                  </div>
+                  <div style={{fontSize:'0.9rem', color:'#6b7280'}}>{ i < currentRound ? 'Complete' : (i === currentRound ? 'Current' : 'Upcoming') }</div>
+                </div>
+              )) : <div className="muted">Schedule will appear here once organiser starts the competition.</div> }
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // RESULTS view (unchanged behavior except tie logic)
+    if (gameState === 'results') {
+      const results = calculateTotals();
+      const topScore = results[0]?.total || 0;
+      const winners = results.filter(r => r.total === topScore);
+      const isTie = winners.length > 1;
+      return (
+        <div className="container">
+          <h1 className="title">🏆 Final Results</h1>
+          <div className="card">
+            <div className="results-box">
+              {isTie ? (
+                <>
+                  <h2>🤝 It’s a Tie!</h2>
+                  <div style={{marginTop:8}}>
+                    {winners.map((w,i)=> <div key={i} className="winner-name">{w.name}</div>)}
+                  </div>
+                  <p style={{marginTop:8}}>Top score: {topScore}/{winners[0].maxScore}</p>
+                </>
+              ) : (
+                <>
+                  <h2>🎉 Winner 🎉</h2>
+                  <div className="winner-name">{winners[0].name}</div>
+                  <p style={{marginTop:8}}>Score: {winners[0].total}/{winners[0].maxScore}</p>
+                </>
+              )}
+            </div>
+
+            <h3 style={{marginTop:12}}>Final Leaderboard</h3>
+            <div style={{marginTop:8}}>
+              {results.map((r,i)=> (
+                <div key={i} className="list-item">
+                  <div><strong>#{i+1}</strong> <span style={{marginLeft:8}}>{r.name}</span></div>
+                  <div style={{fontWeight:700, color:'#ea580c'}}>{r.total}/{r.maxScore}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{marginTop:12}}>
+              <h3>All Scores & Comments</h3>
+              <div style={{marginTop:8}}>
+                {contestants.map((hostName, hi)=>(
+                  <div key={hi} style={{background:'#fef3c7', padding:10, borderRadius:8, marginBottom:8}}>
+                    <div style={{fontWeight:700}}>{hostName}'s Dinner Party</div>
+                    <div style={{marginTop:6}}>
+                      {contestants.map((scorer, si) => {
+                        if (hi === si) return null;
+                        const sc = scores[hi]?.[si];
+                        const cm = comments[hi]?.[si];
+                        return (
+                          <div key={si} style={{background:'#fff', padding:8, borderRadius:6, marginTop:6}}>
+                            <div style={{display:'flex', justifyContent:'space-between'}}><div>{scorer}</div><div style={{fontWeight:700, color:'#ea580c'}}>{sc !== null ? `${sc}/10` : '—'}</div></div>
+                            {cm ? <div style={{marginTop:6, color:'#6b7280', fontStyle:'italic'}}>"{cm}"</div> : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{marginTop:12}}>
+              {myContestantId === 0 ? (
+                <button className="btn-primary" onClick={resetGame}>Start New Competition</button>
+              ) : (
+                <div style={{textAlign:'center', padding:10, background:'#f3f4f6', borderRadius:8}}>
+                  <p className="muted">Only the organiser can start a new competition.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
   </script>
 </body>
 </html>
