@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Full App (with modal)</title>
+  <title>Culinary Quest — Full App (Modal + Safe Load)</title>
 
   <!-- React & Babel (dev) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
@@ -24,7 +24,7 @@
     .title { color: #fff; text-align: center; font-size: 2rem; margin-bottom: 0.25rem; }
     .subtitle { color: #fff; text-align: center; margin-bottom: 1rem; opacity: 0.95; }
 
-    /* input: include 16px to prevent iOS zoom */
+    /* prevent iOS zoom on focus by using >=16px font-size */
     input, textarea { padding: 0.5rem; border-radius: 8px; border:1px solid #e5e7eb; width:100%; font-size:16px; }
     textarea { resize:vertical; min-height:64px; }
 
@@ -119,7 +119,7 @@
     return datePart + timePart;
   }
 
-  // Calendar component
+  // Calendar component (single month)
   function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }) {
     const today = new Date();
     const start = selectedDate ? new Date(selectedDate) : today;
@@ -209,57 +209,67 @@
 
     const debounceRef = useRef(null);
 
-    // initialize gameId & load
+    // load URL params once
     useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const g = params.get('game');
       const c = params.get('c');
-      if (c !== null && c !== undefined) setMyContestantId(parseInt(c,10));
+      if (c !== null && c !== undefined) {
+        const parsedC = parseInt(c, 10);
+        if (!isNaN(parsedC)) setMyContestantId(parsedC);
+      }
       if (g) { setGameId(g); loadGame(g); }
       else { const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9); setGameId(newId); setGameState('setup'); }
     }, []);
 
-    // load state
-const loadGame = async (g) => {
-  try {
-    setSaving(true);
-    const d = await window.storage.get(g);
+    // loadGame - SAFE: use URL param to decide organiser vs guest routing
+    const loadGame = async (g) => {
+      try {
+        setSaving(true);
+        const d = await window.storage.get(g);
+        if (d && d.value) {
+          const parsed = JSON.parse(d.value);
 
-    if (d && d.value) {
-      const parsed = JSON.parse(d.value);
+          // populate state
+          setContestants(parsed.contestants || []);
+          setAccepted(parsed.accepted || {});
+          setHostDates(parsed.hostDates || {});
+          setHostTimes(parsed.hostTimes || {});
+          setHostingOrder(parsed.hostingOrder || []);
+          setScores(parsed.scores || {});
+          setComments(parsed.comments || {});
+          setCurrentRound(parsed.currentRound || 0);
+          setGameStarted(parsed.gameStarted || false);
 
-      setContestants(parsed.contestants || []);
-      setAccepted(parsed.accepted || {});
-      setHostDates(parsed.hostDates || {});
-      setHostTimes(parsed.hostTimes || {});
-      setHostingOrder(parsed.hostingOrder || []);
-      setScores(parsed.scores || {});
-      setComments(parsed.comments || {});
-      setCurrentRound(parsed.currentRound || 0);
-      setGameStarted(parsed.gameStarted || false);
+          // Determine isOrganizer using URL param (safe even if myContestantId state hasn't updated yet)
+          const urlParams = new URLSearchParams(window.location.search);
+          const cParam = urlParams.get('c');
+          const urlContestantId = (cParam !== null && cParam !== undefined) ? parseInt(cParam, 10) : null;
+          const isOrganizer = urlContestantId === 0;
 
-      // ✅ Safe routing fix
-      let nextState = 'setup';
-      if (parsed.gameState) {
-        nextState = parsed.gameState;
-      } else if (parsed.contestants && parsed.contestants.length) {
-        // if we already have contestants, go to active for guests
-        nextState = (myContestantId === 0) ? 'setup' : 'active';
+          // Choose nextState:
+          // - if parsed.gameState exists, trust it
+          // - else if contestants exist: organiser -> 'setup', others -> 'active'
+          // - else -> 'setup'
+          let nextState = 'setup';
+          if (parsed.gameState) {
+            nextState = parsed.gameState;
+          } else if (parsed.contestants && parsed.contestants.length) {
+            nextState = isOrganizer ? 'setup' : 'active';
+          }
+          setGameState(nextState);
+        } else {
+          setGameState('setup');
+        }
+      } catch (e) {
+        console.error('loadGame error:', e);
+        setGameState('setup');
+      } finally {
+        setSaving(false);
       }
+    };
 
-      setGameState(nextState);
-    } else {
-      setGameState('setup');
-    }
-  } catch (e) {
-    console.error('loadGame error:', e);
-    setGameState('setup');
-  } finally {
-    setSaving(false);
-  }
-};
-
-    // atomic save (persists gameState too)
+    // saveGame persists the full state (and optionally merges patch)
     const saveGame = async (patch = {}) => {
       setSaving(true);
       try {
@@ -286,13 +296,12 @@ const loadGame = async (g) => {
       }
     };
 
-    // debounced save for frequent updates (comments)
     const saveGameDebounced = (patch = {}) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => saveGame(patch), 600);
     };
 
-    // add/remove participants
+    // add / remove contestants (organiser is index 0)
     const addContestant = () => {
       if (!newContestantName.trim() || contestants.length >= 6) return;
       const updated = [...contestants, newContestantName.trim()];
@@ -301,7 +310,6 @@ const loadGame = async (g) => {
       saveGame({ contestants: updated });
     };
 
-    // remap nested structures when removing
     const remapDeep = (obj, removedIndex) => {
       const out = {};
       Object.entries(obj || {}).forEach(([hostIdx, inner]) => {
@@ -320,7 +328,7 @@ const loadGame = async (g) => {
     };
 
     const removeContestant = (i) => {
-      if (i === 0) { alert('Cannot remove the organizer'); return; } // protect organiser
+      if (i === 0) { alert('Cannot remove the organizer'); return; }
       if (!confirm('Remove this participant?')) return;
       const updated = contestants.filter((_, idx) => idx !== i);
       const remap = (obj) => {
@@ -346,7 +354,7 @@ const loadGame = async (g) => {
     const getContestantLink = (i) => `${window.location.href.split('?')[0]}?game=${gameId}&c=${i}`;
     const copyLink = (i) => { navigator.clipboard.writeText(getContestantLink(i)); setCopiedIndex(i); setTimeout(()=>setCopiedIndex(null),2000); };
 
-    // RSVP & date selection (validate)
+    // RSVP & date selection w/ validation
     const selectDateFor = (index, isoDate, time) => {
       try {
         const selectedDate = new Date(isoDate);
@@ -355,7 +363,6 @@ const loadGame = async (g) => {
         if (isNaN(selectedDate.getTime())) { alert('Invalid date'); return false; }
         if (selectedDate < today) { alert('Cannot select a date in the past'); return false; }
 
-        // allow user to change own date; block duplicates
         const conflict = Object.entries(hostDates).find(([k,v]) => v === isoDate && parseInt(k,10) !== index);
         if (conflict) { alert('That date is already chosen by someone else. Please pick a different date.'); return false; }
 
@@ -379,11 +386,10 @@ const loadGame = async (g) => {
       setTimeout(()=>setShowConfirmation(false), 2800);
       saveGame({ accepted: a });
     };
-
     const unacceptInvitation = (index) => { const a = {...accepted}; delete a[index]; setAccepted(a); saveGame({ accepted: a }); };
     const declineInvitation = (index) => { if (!confirm('Decline invitation? This will clear your date selection.')) return; const hd={...hostDates}; delete hd[index]; const a={...accepted}; delete a[index]; setHostDates(hd); setAccepted(a); saveGame({ hostDates: hd, accepted: a }); };
 
-    // organiser checks & ordering
+    // organiser checks
     const canOrganiserStart = () => {
       if (contestants.length < 2) return false;
       for (let i=0;i<contestants.length;i++) {
@@ -406,7 +412,7 @@ const loadGame = async (g) => {
       return order;
     };
 
-    // start competition: set scores/comments skeleton and persist
+    // start competition
     const startCompetition = () => {
       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
       const order = prepareHostingOrderChrono();
@@ -422,7 +428,7 @@ const loadGame = async (g) => {
       saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order, gameState: 'active' });
     };
 
-    // storage event: other tabs changed same key -> reload
+    // storage listener: reload when the same key changes in other tabs
     useEffect(() => {
       if (!gameId) return;
       const handler = (e) => {
@@ -434,7 +440,7 @@ const loadGame = async (g) => {
       return () => window.removeEventListener('storage', handler);
     }, [gameId]);
 
-    // ensure hostingOrder exists if gameStarted true
+    // ensure hostingOrder exists if game started
     useEffect(() => {
       if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
         const order = prepareHostingOrderChrono();
@@ -472,7 +478,7 @@ const loadGame = async (g) => {
       return totals;
     };
 
-    // derived UI values
+    // derived
     const organiser = myContestantId === 0;
     const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
     const hostName = contestants[hostIdx] ?? null;
@@ -485,10 +491,17 @@ const loadGame = async (g) => {
     const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
     const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
 
-    // UI rendering
+    // safety net: if a non-organizer somehow ends up in 'setup', move them to 'active'
+    useEffect(() => {
+      if (myContestantId !== null && myContestantId !== 0 && gameState === 'setup') {
+        setGameState('active');
+      }
+    }, [myContestantId, gameState]);
+
+    // RENDER
     if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
 
-    // SETUP screen
+    // SETUP
     if (gameState === 'setup') {
       return (
         <div className="container">
@@ -556,9 +569,9 @@ const loadGame = async (g) => {
       );
     }
 
-    // ACTIVE stage
+    // ACTIVE
     if (gameState === 'active') {
-      // immediate RSVP flow for players who haven't accepted
+      // RSVP flow for guests who haven't accepted
       if (myContestantId !== null && !myAccepted && !gameStarted) {
         const disabledForMe = new Set(Object.entries(hostDates).filter(([k,v]) => parseInt(k,10) !== myContestantId && v).map(([_,v])=>v));
         const today = new Date(); today.setHours(0,0,0,0);
@@ -596,7 +609,7 @@ const loadGame = async (g) => {
         );
       }
 
-      // main active page (setup or scoring)
+      // main active page (before gameStarted) or scoring UI (after started)
       if (!gameStarted) {
         const acceptedCount = Object.values(accepted).filter(Boolean).length;
         return (
@@ -631,12 +644,7 @@ const loadGame = async (g) => {
                     <button className="btn-success" onClick={()=>{
                       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
                       const order = prepareHostingOrderChrono();
-                      // build schedule for modal
-                      const list = order.map((i, idx) => ({
-                        num: idx + 1,
-                        name: contestants[i],
-                        date: formatDateReadable(hostDates[i], hostTimes[i])
-                      }));
+                      const list = order.map((i, idx) => ({ num: idx+1, name: contestants[i], date: formatDateReadable(hostDates[i], hostTimes[i]) }));
                       setScheduleText(list);
                       setShowStartModal(true);
                     }}>
@@ -659,7 +667,6 @@ const loadGame = async (g) => {
                         <div className="modal-actions">
                           <button className="btn-ghost" onClick={()=>setShowStartModal(false)}>Cancel</button>
                           <button className="btn-success" onClick={()=>{
-                            // close modal then start
                             setShowStartModal(false);
                             startCompetition();
                           }}>Confirm</button>
@@ -778,7 +785,6 @@ const loadGame = async (g) => {
                 currentRound < contestants.length - 1 ? (
                   <button className="btn-success" onClick={() => { const nr = currentRound + 1; setCurrentRound(nr); saveGame({ currentRound: nr }); }}>Next Dinner Party →</button>
                 ) : (
-                  // save gameState so other tabs pick up results via storage listener
                   <button className="btn-primary" onClick={async () => { await saveGame({ gameState: 'results' }); setGameState('results'); }}>🏆 View Final Results</button>
                 )
               ) : ( !organiser && hasAllScored(hostIdx) ? <div className="muted">All scores submitted — waiting for organiser to progress.</div> : null )}
@@ -805,7 +811,7 @@ const loadGame = async (g) => {
       );
     }
 
-    // RESULTS screen
+    // RESULTS
     if (gameState === 'results') {
       const results = calculateTotals();
       const topScore = results[0]?.total || 0;
