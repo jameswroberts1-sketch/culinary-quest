@@ -1,11 +1,12 @@
-<!DOCTYPE html>
+<!-- file: public/index.html -->
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Setup + GameStart Fix</title>
+  <title>Culinary Quest — Updated</title>
 
-  <!-- React & Babel -->
+  <!-- React & Babel (dev) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -17,36 +18,36 @@
       background: linear-gradient(135deg,#334155,#57534e,#1e293b);
       color: #1f2937;
       min-height: 100vh;
+      padding: 1rem;
     }
-    .container { max-width: 1000px; margin: 2rem auto; padding: 1rem; }
-    .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 10px 24px rgba(0,0,0,0.18); margin-bottom: 1rem; }
-    .title { color: #fff; text-align: center; font-size: 2rem; margin-bottom: 0.5rem; }
-    .subtitle { color: #fff; text-align: center; margin-bottom: 1rem; opacity: 0.9; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 1rem; }
+    .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 10px 24px rgba(0,0,0,0.12); margin-bottom: 1rem; }
+    .title { color: #fff; text-align: center; font-size: 2rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #fff; text-align: center; margin-bottom: 1rem; opacity: 0.95; }
 
-    /* Buttons */
+    input, textarea { padding: 0.5rem; border-radius: 8px; border:1px solid #e5e7eb; width:100%; }
+    textarea { resize:vertical; min-height:64px; }
+
     button { cursor: pointer; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; }
     .btn-primary { background: #dc2626; color: #fff; }
     .btn-success { background: #16a34a; color: #fff; }
     .btn-secondary { background: #ea580c; color: #fff; }
-    .btn-ghost { background: transparent; border: 1px solid #e5e7eb; color: #374151; }
+    .btn-ghost { background: transparent; border: 1px solid #e5e7eb; color: #374151; padding:0.45rem 0.75rem; }
 
-    /* small utility */
     .muted { color: #6b7280; }
     .flex { display:flex; gap:0.5rem; align-items:center; }
     .space-between { display:flex; justify-content:space-between; align-items:center; }
 
-    /* calendar */
     .calendar { width: 100%; max-width: 420px; margin: 0.75rem auto 0; }
     .cal-header { display:flex; justify-content:space-between; align-items:center; padding:0.5rem; }
     .cal-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; padding:0.5rem; }
-    .cal-day { height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; }
+    .cal-day { height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; user-select:none; }
     .cal-day.disabled { background:#f3f4f6; color:#9ca3af; cursor:not-allowed; }
     .cal-day.available { background:#fff; cursor:pointer; border:1px solid #e5e7eb; }
     .cal-day.selected { background:#ea580c; color:#fff; font-weight:700; }
     .cal-weekdays { display:grid; grid-template-columns: repeat(7,1fr); gap:6px; padding:6px 0; color:#6b7280; font-size:0.85rem; text-align:center; }
 
-    /* RSVP area */
-    .rsvp-card { margin-top: 0.75rem; padding:1rem; border-radius:8px; background:#fef3c7; border:2px solid #f59e0b; }
+    .rsvp-card { margin-top: 0.75rem; padding:1.25rem; border-radius:12px; background: linear-gradient(135deg, #fef3c7, #fde68a); border: 2px solid #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.12); }
     .list { margin-top:0.75rem; }
     .list-item { padding:0.6rem; border-radius:8px; background:#fff; display:flex; justify-content:space-between; align-items:center; border:1px solid #f1f5f9; margin-bottom:0.5rem; }
     .badge { padding:0.25rem 0.5rem; border-radius:6px; font-size:0.8rem; color:#fff; background:#3b82f6; }
@@ -56,9 +57,20 @@
 
     .wait-box { background:#dbeafe; border:1px solid #bfdbfe; padding:0.75rem; border-radius:8px; color:#1e3a8a; margin-top:12px; text-align:center; }
 
+    .timeline { display:flex; overflow-x:auto; gap:1rem; padding:1rem; background:#f9fafb; border-radius:8px; }
+    .timeline-card { min-width:150px; padding:1rem; background:#fff; border-radius:8px; border:2px solid #e5e7eb; text-align:center; }
+    .timeline-card.current { background:#ea580c; color:#fff; border-color:#ea580c; }
+    .timeline-card.complete { border-color:#10b981; }
+
+    .saving-pill { position:fixed; right:16px; bottom:16px; background:#111827; color:#fff; padding:8px 12px; border-radius:999px; font-size:0.9rem; opacity:0.92; box-shadow:0 6px 18px rgba(0,0,0,0.24); }
+
+    @media (max-width:900px) {
+      .space-between { flex-direction:column; align-items:flex-start; gap:8px; }
+    }
     @media (max-width:600px) {
       .calendar { max-width: 100%; }
-      .cal-day { height:36px; }
+      .cal-day { height:36px; font-size:0.85rem; }
+      .timeline-card { min-width:130px; }
     }
   </style>
 </head>
@@ -66,7 +78,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-  const { useState, useEffect, useMemo } = React;
+  const { useState, useEffect, useMemo, useRef } = React;
 
   // storage shim
   if (!window.storage) {
@@ -80,16 +92,16 @@
     };
   }
 
-  // helpers
+  // small helpers
   function formatDateISO(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2,'0');
-    const d = String(date.getDate()).padStart(2,'0');
-    return `${y}-${m}-${d}`;
+    const d = new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
   }
   function formatDateReadable(isoDate, time) {
     if (!isoDate) return 'Pending';
-    // create a Date (local). Combine isoDate + time if provided.
     const s = isoDate + (time ? 'T' + time : 'T00:00');
     const d = new Date(s);
     const opts = { year:'numeric', month:'short', day:'numeric' };
@@ -98,13 +110,12 @@
     return datePart + timePart;
   }
 
-  // small Calendar component (one month view)
+  // Calendar component (one month)
   function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }) {
     const today = new Date();
-    const startYear = (selectedDate ? new Date(selectedDate) : today).getFullYear();
-    const startMonth = (selectedDate ? new Date(selectedDate) : today).getMonth();
-    const [viewYear, setViewYear] = useState(startYear);
-    const [viewMonth, setViewMonth] = useState(startMonth);
+    const start = selectedDate ? new Date(selectedDate) : today;
+    const [viewYear, setViewYear] = useState(start.getFullYear());
+    const [viewMonth, setViewMonth] = useState(start.getMonth());
 
     useEffect(() => {
       if (selectedDate) {
@@ -126,7 +137,7 @@
     for (let d=1; d<=daysInMonth; d++) cells.push(new Date(viewYear, viewMonth, d));
 
     const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const minISO = minDate ? formatDateISO(minDate) : formatDateISO(today);
+    const minISO = (minDate instanceof Date) ? formatDateISO(minDate) : formatDateISO(today);
 
     return (
       <div className="calendar card" aria-hidden={false}>
@@ -146,14 +157,9 @@
             const isDisabled = isPast || disabledDates.has(cellISO);
             const isSelected = selectedDate && formatDateISO(new Date(selectedDate)) === cellISO;
             const cls = isDisabled ? 'cal-day disabled' : (isSelected ? 'cal-day selected' : 'cal-day available');
+            const handle = () => { if (!isDisabled) onSelect(cellISO); };
             return (
-              <div
-                key={idx}
-                className={cls}
-                onClick={() => { if (!isDisabled) onSelect(cellISO); }}
-                title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}
-                style={{userSelect:'none'}}
-              >
+              <div key={idx} className={cls} onClick={handle} title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}>
                 {cell.getDate()}
               </div>
             );
@@ -175,7 +181,7 @@
     const [scores, setScores] = useState({});
     const [comments, setComments] = useState({});
     const [currentRound, setCurrentRound] = useState(0);
-    const [gameStarted, setGameStarted] = useState(false); // <-- new flag
+    const [gameStarted, setGameStarted] = useState(false);
 
     // local UI
     const [newContestantName, setNewContestantName] = useState('');
@@ -184,8 +190,12 @@
     const [tempComment, setTempComment] = useState('');
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [showLinks, setShowLinks] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
-    // load id & persisted state
+    // debounce ref for frequent saves (comments)
+    const debounceRef = useRef(null);
+
     useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const g = params.get('game');
@@ -195,8 +205,10 @@
       else { const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9); setGameId(newId); setGameState('setup'); }
     }, []);
 
+    // load game state from storage
     const loadGame = async (g) => {
       try {
+        setSaving(true);
         const d = await window.storage.get(g);
         if (d && d.value) {
           const parsed = JSON.parse(d.value);
@@ -209,7 +221,6 @@
           setComments(parsed.comments || {});
           setCurrentRound(parsed.currentRound || 0);
           setGameStarted(parsed.gameStarted || false);
-          // keep the same UI state but if contestants exist set to active for RSVP stage
           setGameState(parsed.contestants && parsed.contestants.length ? 'active' : 'setup');
         } else {
           setGameState('setup');
@@ -217,26 +228,41 @@
       } catch (e) {
         console.error('loadGame', e);
         setGameState('setup');
+      } finally { setSaving(false); }
+    };
+
+    // atomic save
+    const saveGame = async (patch = {}) => {
+      // immediate save for critical operations
+      setSaving(true);
+      try {
+        const data = {
+          contestants, accepted, hostDates, hostTimes, hostingOrder,
+          scores, comments, currentRound, gameStarted,
+          ...patch
+        };
+        // update in-memory to keep UI consistent
+        setContestants(data.contestants || contestants);
+        setAccepted(data.accepted || accepted);
+        setHostDates(data.hostDates || hostDates);
+        setHostTimes(data.hostTimes || hostTimes);
+        setHostingOrder(data.hostingOrder || hostingOrder);
+        setScores(data.scores || scores);
+        setComments(data.comments || comments);
+        setCurrentRound(data.currentRound ?? currentRound);
+        setGameStarted(data.gameStarted ?? gameStarted);
+        await window.storage.set(gameId, JSON.stringify(data));
+      } catch (e) {
+        console.error('saveGame', e);
+      } finally {
+        setSaving(false);
       }
     };
 
-    const saveGame = async (patch = {}) => {
-      const data = {
-        contestants, accepted, hostDates, hostTimes, hostingOrder,
-        scores, comments, currentRound, gameStarted,
-        ...patch
-      };
-      // update local state to ensure UI stays in sync
-      setContestants(data.contestants || contestants);
-      setAccepted(data.accepted || accepted);
-      setHostDates(data.hostDates || hostDates);
-      setHostTimes(data.hostTimes || hostTimes);
-      setHostingOrder(data.hostingOrder || hostingOrder);
-      setScores(data.scores || scores);
-      setComments(data.comments || comments);
-      setCurrentRound(data.currentRound ?? currentRound);
-      setGameStarted(data.gameStarted ?? gameStarted);
-      await window.storage.set(gameId, JSON.stringify(data));
+    // debounced save used for frequent updates (comments typing)
+    const saveGameDebounced = (patch = {}) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => saveGame(patch), 600);
     };
 
     // management
@@ -247,37 +273,93 @@
       setNewContestantName('');
       saveGame({ contestants: updated });
     };
+
     const removeContestant = (i) => {
+      if (i === 0) { alert('Cannot remove the organizer'); return; } // protect organiser
+      if (!confirm('Remove this participant?')) return;
+      // remove and compact arrays/objects
       const updated = contestants.filter((_, idx) => idx !== i);
-      const a = {...accepted}; delete a[i];
-      const hd = {...hostDates}; delete hd[i];
-      const ht = {...hostTimes}; delete ht[i];
-      setContestants(updated); setAccepted(a); setHostDates(hd); setHostTimes(ht);
-      saveGame({ contestants: updated, accepted: a, hostDates: hd, hostTimes: ht });
+      const remap = (obj) => {
+        const next = {};
+        Object.entries(obj || {}).forEach(([k,v]) => {
+          const ik = parseInt(k,10);
+          if (ik === i) return; // dropped
+          const newIndex = ik > i ? ik - 1 : ik;
+          next[newIndex] = v;
+        });
+        return next;
+      };
+      const a = remap(accepted);
+      const hd = remap(hostDates);
+      const ht = remap(hostTimes);
+      const sc = remapDeep(scores, i);
+      const cm = remapDeep(comments, i);
+      setContestants(updated); setAccepted(a); setHostDates(hd); setHostTimes(ht); setScores(sc); setComments(cm);
+      // hosting order needs rebuilding
+      const order = prepareHostingOrderChrono(updated, hd);
+      saveGame({ contestants: updated, accepted: a, hostDates: hd, hostTimes: ht, scores: sc, comments: cm, hostingOrder: order });
     };
+
+    // helper to remap nested objects (scores/comments) when index removed
+    const remapDeep = (obj, removedIndex) => {
+      const out = {};
+      Object.entries(obj || {}).forEach(([hostIdx, inner]) => {
+        const hi = parseInt(hostIdx,10);
+        if (hi === removedIndex) return;
+        const newHost = hi > removedIndex ? hi - 1 : hi;
+        out[newHost] = {};
+        Object.entries(inner || {}).forEach(([scorerIdx, val]) => {
+          const si = parseInt(scorerIdx,10);
+          if (si === removedIndex) return;
+          const newScorer = si > removedIndex ? si - 1 : si;
+          out[newHost][newScorer] = val;
+        });
+      });
+      return out;
+    };
+
     const getContestantLink = (i) => `${window.location.href.split('?')[0]}?game=${gameId}&c=${i}`;
     const copyLink = (i) => { navigator.clipboard.writeText(getContestantLink(i)); setCopiedIndex(i); setTimeout(()=>setCopiedIndex(null),2000); };
 
-    // RSVP & date selection
+    // RSVP and date selection with validation
     const selectDateFor = (index, isoDate, time) => {
-      // ensure unique: check if another index uses same date
-      const conflict = Object.entries(hostDates).find(([k,v]) => v === isoDate && parseInt(k,10) !== index);
-      if (conflict) return false;
-      const hd = {...hostDates, [index]: isoDate};
-      const ht = {...hostTimes};
-      if (time) ht[index] = time; else delete ht[index];
-      setHostDates(hd); setHostTimes(ht);
-      saveGame({ hostDates: hd, hostTimes: ht });
-      return true;
+      try {
+        const selectedDate = new Date(isoDate);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        selectedDate.setHours(0,0,0,0);
+        if (isNaN(selectedDate.getTime())) { alert('Invalid date'); return false; }
+        if (selectedDate < today) { alert('Cannot select a date in the past'); return false; }
+
+        // allow re-selecting own date; block duplicates from others
+        const conflict = Object.entries(hostDates).find(([k,v]) => v === isoDate && parseInt(k,10) !== index);
+        if (conflict) { alert('That date is already chosen by someone else. Please pick a different date.'); return false; }
+
+        const hd = {...hostDates, [index]: isoDate};
+        const ht = {...hostTimes};
+        if (time) ht[index] = time; else delete ht[index];
+        setHostDates(hd); setHostTimes(ht);
+        saveGame({ hostDates: hd, hostTimes: ht });
+        return true;
+      } catch (e) {
+        console.error('selectDateFor', e);
+        return false;
+      }
     };
+
     const acceptInvitation = (index) => {
       if (!hostDates[index]) { alert('Please choose a date before accepting.'); return; }
       const a = {...accepted, [index]: true};
-      setAccepted(a); saveGame({ accepted: a });
+      setAccepted(a);
+      setShowConfirmation(true);
+      setTimeout(()=>setShowConfirmation(false), 2800);
+      saveGame({ accepted: a });
     };
-    const unacceptInvitation = (index) => { const a = {...accepted}; delete a[index]; setAccepted(a); saveGame({ accepted: a }); };
 
-    // check organiser can start
+    const unacceptInvitation = (index) => { const a = {...accepted}; delete a[index]; setAccepted(a); saveGame({ accepted: a }); };
+    const declineInvitation = (index) => { if (!confirm('Decline invitation? This will clear your date selection.')) return; const hd={...hostDates}; delete hd[index]; const a={...accepted}; delete a[index]; setHostDates(hd); setAccepted(a); saveGame({ hostDates: hd, accepted: a }); };
+
+    // organiser checks
     const canOrganiserStart = () => {
       if (contestants.length < 2) return false;
       for (let i=0;i<contestants.length;i++) {
@@ -287,8 +369,8 @@
       return new Set(dates).size === dates.length;
     };
 
-    const prepareHostingOrderChrono = () => {
-      const list = contestants.map((_, idx) => ({ idx, date: hostDates[idx] || '' }));
+    const prepareHostingOrderChrono = (maybeContestants=contestants, maybeHostDates=hostDates) => {
+      const list = (maybeContestants || contestants).map((_, idx) => ({ idx, date: maybeHostDates[idx] || '' }));
       list.sort((a,b) => {
         if (a.date === b.date) return a.idx - b.idx;
         if (!a.date) return 1;
@@ -297,15 +379,14 @@
       });
       const order = list.map(x => x.idx);
       setHostingOrder(order);
-      saveGame({ hostingOrder: order });
       return order;
     };
 
-    // THIS is the organiser action to actually *start* the competition:
+    // start competition - ensures hostingOrder saved
     const startCompetition = () => {
       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
       const order = prepareHostingOrderChrono();
-      // initialize scores/comments
+      // init scores/comments
       const s = {}, c = {};
       contestants.forEach((_, h) => {
         s[h] = {}; c[h] = {};
@@ -318,15 +399,22 @@
       saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order });
     };
 
-    // earlier "Done — Wait for RSVPs" sets gameState to active (we keep that)
-    const openActiveRSVPStage = () => setGameState('active');
+    // ensure hostingOrder exists on reload/start
+    useEffect(() => {
+      if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
+        const order = prepareHostingOrderChrono();
+        saveGame({ hostingOrder: order });
+      }
+    }, [gameStarted]);
 
     const submitScore = () => {
-      if (!gameStarted) return; // safety
+      if (!gameStarted) return;
       const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
       if (myContestantId === hostIdx) { alert("Hosts can't score themselves."); return; }
       if (myContestantId !== null && tempScore !== '' && parseInt(tempScore,10) >= 0 && parseInt(tempScore,10) <= 10) {
         const s = {...scores}; const cm = {...comments};
+        s[hostIdx] = s[hostIdx] || {};
+        cm[hostIdx] = cm[hostIdx] || {};
         s[hostIdx][myContestantId] = parseInt(tempScore,10);
         cm[hostIdx][myContestantId] = tempComment;
         setScores(s); setComments(cm);
@@ -338,7 +426,8 @@
     const hasAllScored = (hostIndex) => { if (!scores[hostIndex]) return false; return Object.values(scores[hostIndex]).every(v => v !== null); };
     const allRoundsComplete = () => contestants.every((_,i)=>hasAllScored(i));
     const finishCompetition = () => { if (!gameStarted) return; setGameState('results'); };
-    const resetGame = async () => { await window.storage.delete(gameId); window.location.href = window.location.href.split('?')[0]; };
+
+    const resetGame = async () => { if (!confirm('Clear saved competition and start new?')) return; await window.storage.delete(gameId); window.location.href = window.location.href.split('?')[0]; };
 
     const calculateTotals = () => {
       const maxScore = (contestants.length - 1) * 10;
@@ -351,7 +440,7 @@
       return totals;
     };
 
-    // derived values
+    // derived UI
     const organiser = myContestantId === 0;
     const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
     const hostName = contestants[hostIdx] ?? null;
@@ -360,26 +449,25 @@
     const totalGuests = Math.max(0, contestants.length - 1);
     const iHaveScored = (myContestantId !== null && myContestantId !== hostIdx && scores[hostIdx]?.[myContestantId] !== null);
 
-    // disabled dates for calendar (set of all chosen hostDates)
     const disabledDatesSet = useMemo(()=> {
       const set = new Set();
       Object.entries(hostDates).forEach(([k,v]) => { if (v) set.add(v); });
       return set;
     }, [hostDates]);
 
-    // my RSVP state
     const myAccepted = myContestantId !== null ? !!accepted[myContestantId] : false;
     const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
     const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
 
-    // UI: ensure hostingOrder exists if gameStarted true
     useEffect(()=> {
+      // ensure hostingOrder created if gameStarted true
       if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
-        prepareHostingOrderChrono();
+        const order = prepareHostingOrderChrono();
+        saveGame({ hostingOrder: order });
       }
-    }, [gameStarted]);
+    }, [gameStarted, contestants, hostDates]);
 
-    // RENDERING
+    // UI Rendering
     if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
 
     // SETUP
@@ -405,18 +493,21 @@
                       {i===0 && <div className="badge">Organiser</div>}
                     </div>
                     <div style={{display:'flex', gap:8}}>
-                      <button onClick={()=>removeContestant(i)} className="btn-ghost">Remove</button>
+                      <button onClick={()=>removeContestant(i)} className="btn-ghost">{i===0 ? 'Cannot remove' : 'Remove'}</button>
                       <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
                     </div>
                   </div>
                 ))}
+                {contestants.length === 0 && <div style={{textAlign:'center', padding:'1rem', color:'#9ca3af'}}>No participants yet — add guests to begin.</div>}
               </div>
 
               <div style={{marginTop:12}}>
-                <button onClick={()=>setShowLinks(true)} className="btn-success">Share Links & RSVP</button>
+                <button onClick={()=>{ setShowLinks(true); saveGame({}); }} className="btn-success" disabled={contestants.length < 2}>Share Links & RSVP</button>
+                <div style={{marginTop:8}} className="muted">Organiser is participant #1. Minimum 2 participants required.</div>
               </div>
             </div>
           ) : (
+
             <div className="card">
               <h2>🔗 Invite Links & RSVP</h2>
               <p className="muted">Send each player their unique link. Each player must accept and choose a hosting date before the organiser can start.</p>
@@ -439,6 +530,7 @@
 
               <div style={{marginTop:12}}>
                 <button onClick={() => { setGameState('active'); saveGame({}); }} className="btn-success">Done — Wait for RSVPs</button>
+                <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setShowLinks(false); }}>Back</button>
               </div>
             </div>
           )}
@@ -446,11 +538,9 @@
       );
     }
 
-    // ACTIVE stage: there are two modes:
-    // - Setup mode inside active: gameStarted === false -> RSVP flow & waiting
-    // - Game mode: gameStarted === true -> scoring UI etc.
+    // ACTIVE stage
     if (gameState === 'active') {
-      // If the user is a player and hasn't accepted yet -> show immediate RSVP flow
+      // If the user is a player and hasn't accepted yet -> show RSVP flow
       if (myContestantId !== null && !myAccepted && !gameStarted) {
         const disabledForMe = new Set(Object.entries(hostDates).filter(([k,v]) => parseInt(k,10) !== myContestantId && v).map(([_,v])=>v));
         const today = new Date(); today.setHours(0,0,0,0);
@@ -476,21 +566,21 @@
               <div style={{marginTop:12, display:'flex', gap:8}}>
                 <button className="btn-primary" onClick={()=>{ if (!hostDates[myContestantId]) { alert('Please pick a date first'); return; } acceptInvitation(myContestantId); }} disabled={!hostDates[myContestantId]}>✅ Accept Invitation</button>
                 <button className="btn-ghost" onClick={()=>{ const copy={...hostDates}; delete copy[myContestantId]; setHostDates(copy); saveGame({ hostDates: copy }); }}>Clear</button>
+                <button className="btn-ghost" onClick={()=>declineInvitation(myContestantId)}>Decline</button>
               </div>
 
               <div style={{marginTop:12}}>
                 {hostDates[myContestantId] && <div className="rsvp-card">Your chosen date: <strong>{formatDateReadable(hostDates[myContestantId], hostTimes[myContestantId])}</strong></div>}
+                {showConfirmation && <div style={{marginTop:12, background:'#d1fae5', padding:'1rem', borderRadius:'8px', border:'2px solid #10b981'}}>✅ Invitation accepted! Waiting for organizer to start...</div>}
               </div>
             </div>
           </div>
         );
       }
 
-      // Otherwise we show the main active page.
-      // If gameStarted is false: guests who accepted see confirmation + wait-box; organiser sees RSVP dashboard + Start Competition button.
+      // Otherwise show main active page
       if (!gameStarted) {
-        // prepare disabled set for calendar versions if needed
-        const disabledSet = new Set(Object.entries(hostDates).map(([k,v]) => v));
+        const acceptedCount = Object.values(accepted).filter(Boolean).length;
         return (
           <div className="container">
             <h1 className="title">🍽️ Culinary Quest</h1>
@@ -501,7 +591,10 @@
 
               { organiser ? (
                 <div>
-                  <p className="muted">Organiser view: review RSVPs and chosen dates. You can start the competition once everyone has accepted and dates are unique.</p>
+                  <p className="muted">Organiser view: review RSVPs and chosen dates. You can start once everyone has accepted and dates are unique.</p>
+
+                  {acceptedCount === 0 && <div style={{textAlign:'center', padding:'2rem', color:'#9ca3af'}}><div style={{fontSize:'2rem'}}>⏳</div><p>Waiting for guests to accept invitations...</p></div>}
+
                   <div style={{marginTop:12}}>
                     {contestants.map((n,i)=>(
                       <div key={i} className="list-item">
@@ -517,7 +610,12 @@
                   </div>
 
                   <div style={{marginTop:12}}>
-                    <button className="btn-success" onClick={()=>{ if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; } const order = prepareHostingOrderChrono(); if (!confirm('Start competition with schedule:\\n' + order.map(i=>`${contestants[i]} — ${formatDateReadable(hostDates[i], hostTimes[i])}`).join('\\n'))) return; startCompetition(); }}>
+                    <button className="btn-success" onClick={()=>{
+                      if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
+                      const order = prepareHostingOrderChrono();
+                      if (!confirm('Start competition with schedule:\\n' + order.map(i=>`${contestants[i]} — ${formatDateReadable(hostDates[i], hostTimes[i])}`).join('\\n'))) return;
+                      startCompetition();
+                    }}>
                       Start Competition
                     </button>
                     <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setGameState('setup'); alert('You can manage participants in the Setup screen.'); }}>Manage Participants</button>
@@ -525,7 +623,6 @@
                 </div>
               ) : (
                 <div>
-                  {/* Guest view during setup */}
                   <div style={{marginTop:8}}>
                     <div className="list-item">
                       <div>
@@ -539,33 +636,33 @@
                       <div className="muted" style={{marginTop:6}}>Once the organiser starts the competition, you will be able to submit scores for each dinner party.</div>
                     </div>
 
-                    <div style={{marginTop:12}} className="muted">Group progress: {Object.values(accepted).filter(Boolean).length}/{contestants.length} accepted</div>
+                    <div style={{marginTop:12}} className="muted">Group progress: {acceptedCount}/{contestants.length} accepted</div>
                   </div>
                 </div>
               ) }
-
             </div>
 
             <div className="card">
               <h3>Schedule Preview (chronological)</h3>
               <div style={{marginTop:12}}>
-                {(hostingOrder && hostingOrder.length) ? hostingOrder.map((idx, i) => (
-                  <div key={i} className="list-item">
-                    <div>
-                      <div style={{fontWeight:600}}>{i+1}. {contestants[idx]}</div>
-                      <div className="muted">{ formatDateReadable(hostDates[idx], hostTimes[idx]) }</div>
-                    </div>
-                    <div style={{fontSize:'0.9rem', color:'#6b7280'}}>{ i < currentRound ? 'Complete' : (i === currentRound ? 'Current' : 'Upcoming') }</div>
+                {(hostingOrder && hostingOrder.length) ? (
+                  <div className="timeline">
+                    {hostingOrder.map((idx, i) => (
+                      <div key={i} className={`timeline-card ${i < currentRound ? 'complete' : (i === currentRound ? 'current' : '')}`}>
+                        <div style={{fontSize:'0.75rem', opacity:0.8}}>Round {i+1}</div>
+                        <div style={{fontWeight:'bold', marginTop:6}}>{contestants[idx]}</div>
+                        <div style={{fontSize:'0.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
+                      </div>
+                    ))}
                   </div>
-                )) : <div className="muted">Schedule will appear after the organiser starts the competition.</div>}
+                ) : <div className="muted">Schedule will appear after the organiser starts the competition.</div>}
               </div>
             </div>
           </div>
         );
       }
 
-      // GAME STARTED: real scoring phase
-      // Now it is safe to render scoring UI for guests
+      // GAME STARTED: scoring phase
       const totals = calculateTotals();
       return (
         <div className="container">
@@ -602,7 +699,7 @@
                 </div>
                 <div style={{marginTop:8}}>
                   <label className="muted">Comment (optional)</label>
-                  <textarea rows="3" value={tempComment} onChange={e=>setTempComment(e.target.value)} />
+                  <textarea rows="3" value={tempComment} onChange={e=>{ setTempComment(e.target.value); saveGameDebounced({ comments: { ...comments, [hostIdx]: { ...(comments[hostIdx] || {}), [myContestantId]: e.target.value } } }); }} />
                 </div>
                 <div style={{marginTop:8}}>
                   <button className="btn-primary" onClick={submitScore} disabled={tempScore === '' || parseInt(tempScore,10) < 0 || parseInt(tempScore,10) > 10}>Submit Score</button>
@@ -612,7 +709,6 @@
 
             { myContestantId === hostIdx && <div className="card" style={{background:'#fef3c7'}}>🍽️ You're tonight's host — you don't score yourself.</div> }
 
-            {/* Host-only detailed status */}
             { organiser ? (
               <div style={{marginTop:12}}>
                 <h4>Scoring Status (Organiser)</h4>
@@ -634,7 +730,7 @@
                 currentRound < contestants.length - 1 ? (
                   <button className="btn-success" onClick={() => { const nr = currentRound + 1; setCurrentRound(nr); saveGame({ currentRound: nr }); }}>Next Dinner Party →</button>
                 ) : (
-                  <button className="btn-primary" onClick={() => { setGameState('results'); }}>🏆 View Final Results</button>
+                  <button className="btn-primary" onClick={() => { setGameState('results'); saveGame({}); }}>🏆 View Final Results</button>
                 )
               ) : ( !organiser && hasAllScored(hostIdx) ? <div className="muted">All scores submitted — waiting for organiser to progress.</div> : null )}
             </div>
@@ -643,18 +739,19 @@
           <div className="card">
             <h3>Competition Schedule (chronological)</h3>
             <div style={{marginTop:12}}>
-              { (hostingOrder && hostingOrder.length) ? hostingOrder.map((idx, i) => (
-                <div key={i} className="list-item">
-                  <div>
-                    <div style={{fontWeight:600}}>{i+1}. {contestants[idx]}</div>
-                    <div className="muted">{ formatDateReadable(hostDates[idx], hostTimes[idx]) }</div>
-                  </div>
-                  <div style={{fontSize:'0.9rem', color:'#6b7280'}}>{ i < currentRound ? 'Complete' : (i === currentRound ? 'Current' : 'Upcoming') }</div>
+              { (hostingOrder && hostingOrder.length) ? (
+                <div className="timeline">
+                  {hostingOrder.map((idx, i) => (
+                    <div key={i} className={`timeline-card ${i < currentRound ? 'complete' : (i === currentRound ? 'current' : '')}`}>
+                      <div style={{fontSize:'0.75rem', opacity:0.8}}>Round {i+1}</div>
+                      <div style={{fontWeight:'bold', marginTop:6}}>{contestants[idx]}</div>
+                      <div style={{fontSize:'0.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
+                    </div>
+                  ))}
                 </div>
-              )) : <div className="muted">Schedule will appear here once organiser starts the competition.</div> }
+              ) : <div className="muted">Schedule will appear here once organiser starts the competition.</div> }
             </div>
           </div>
-
         </div>
       );
     }
@@ -728,6 +825,7 @@
   }
 
   ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
+
   </script>
 </body>
 </html>
