@@ -1,10 +1,10 @@
-<!-- file: public/index.html -->
+<!-- Replace your current HTML with this file -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Updated</title>
+  <title>Culinary Quest — Sync Fix</title>
 
   <!-- React & Babel (dev) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
@@ -92,7 +92,6 @@
     };
   }
 
-  // small helpers
   function formatDateISO(date) {
     const d = new Date(date);
     const y = d.getFullYear();
@@ -110,7 +109,6 @@
     return datePart + timePart;
   }
 
-  // Calendar component (one month)
   function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }) {
     const today = new Date();
     const start = selectedDate ? new Date(selectedDate) : today;
@@ -170,20 +168,18 @@
   }
 
   function CulinaryQuest() {
-    // persisted state
-    const [gameState, setGameState] = useState('loading'); // setup | active | results
+    const [gameState, setGameState] = useState('loading');
     const [gameId, setGameId] = useState(null);
     const [contestants, setContestants] = useState([]);
-    const [accepted, setAccepted] = useState({});     // { idx: true }
-    const [hostDates, setHostDates] = useState({});   // { idx: 'YYYY-MM-DD' }
-    const [hostTimes, setHostTimes] = useState({});   // { idx: 'HH:MM' }
+    const [accepted, setAccepted] = useState({});
+    const [hostDates, setHostDates] = useState({});
+    const [hostTimes, setHostTimes] = useState({});
     const [hostingOrder, setHostingOrder] = useState([]);
     const [scores, setScores] = useState({});
     const [comments, setComments] = useState({});
     const [currentRound, setCurrentRound] = useState(0);
     const [gameStarted, setGameStarted] = useState(false);
 
-    // local UI
     const [newContestantName, setNewContestantName] = useState('');
     const [myContestantId, setMyContestantId] = useState(null);
     const [tempScore, setTempScore] = useState('');
@@ -192,8 +188,6 @@
     const [showLinks, setShowLinks] = useState(false);
     const [saving, setSaving] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
-
-    // debounce ref for frequent saves (comments)
     const debounceRef = useRef(null);
 
     useEffect(() => {
@@ -205,7 +199,6 @@
       else { const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9); setGameId(newId); setGameState('setup'); }
     }, []);
 
-    // load game state from storage
     const loadGame = async (g) => {
       try {
         setSaving(true);
@@ -221,7 +214,7 @@
           setComments(parsed.comments || {});
           setCurrentRound(parsed.currentRound || 0);
           setGameStarted(parsed.gameStarted || false);
-          setGameState(parsed.contestants && parsed.contestants.length ? 'active' : 'setup');
+          setGameState(parsed.gameState || (parsed.contestants && parsed.contestants.length ? 'active' : 'setup'));
         } else {
           setGameState('setup');
         }
@@ -231,17 +224,14 @@
       } finally { setSaving(false); }
     };
 
-    // atomic save
     const saveGame = async (patch = {}) => {
-      // immediate save for critical operations
       setSaving(true);
       try {
         const data = {
           contestants, accepted, hostDates, hostTimes, hostingOrder,
-          scores, comments, currentRound, gameStarted,
+          scores, comments, currentRound, gameStarted, gameState,
           ...patch
         };
-        // update in-memory to keep UI consistent
         setContestants(data.contestants || contestants);
         setAccepted(data.accepted || accepted);
         setHostDates(data.hostDates || hostDates);
@@ -251,6 +241,7 @@
         setComments(data.comments || comments);
         setCurrentRound(data.currentRound ?? currentRound);
         setGameStarted(data.gameStarted ?? gameStarted);
+        setGameState(data.gameState ?? gameState);
         await window.storage.set(gameId, JSON.stringify(data));
       } catch (e) {
         console.error('saveGame', e);
@@ -259,13 +250,11 @@
       }
     };
 
-    // debounced save used for frequent updates (comments typing)
     const saveGameDebounced = (patch = {}) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => saveGame(patch), 600);
     };
 
-    // management
     const addContestant = () => {
       if (!newContestantName.trim() || contestants.length >= 6) return;
       const updated = [...contestants, newContestantName.trim()];
@@ -274,33 +263,6 @@
       saveGame({ contestants: updated });
     };
 
-    const removeContestant = (i) => {
-      if (i === 0) { alert('Cannot remove the organizer'); return; } // protect organiser
-      if (!confirm('Remove this participant?')) return;
-      // remove and compact arrays/objects
-      const updated = contestants.filter((_, idx) => idx !== i);
-      const remap = (obj) => {
-        const next = {};
-        Object.entries(obj || {}).forEach(([k,v]) => {
-          const ik = parseInt(k,10);
-          if (ik === i) return; // dropped
-          const newIndex = ik > i ? ik - 1 : ik;
-          next[newIndex] = v;
-        });
-        return next;
-      };
-      const a = remap(accepted);
-      const hd = remap(hostDates);
-      const ht = remap(hostTimes);
-      const sc = remapDeep(scores, i);
-      const cm = remapDeep(comments, i);
-      setContestants(updated); setAccepted(a); setHostDates(hd); setHostTimes(ht); setScores(sc); setComments(cm);
-      // hosting order needs rebuilding
-      const order = prepareHostingOrderChrono(updated, hd);
-      saveGame({ contestants: updated, accepted: a, hostDates: hd, hostTimes: ht, scores: sc, comments: cm, hostingOrder: order });
-    };
-
-    // helper to remap nested objects (scores/comments) when index removed
     const remapDeep = (obj, removedIndex) => {
       const out = {};
       Object.entries(obj || {}).forEach(([hostIdx, inner]) => {
@@ -318,20 +280,41 @@
       return out;
     };
 
+    const removeContestant = (i) => {
+      if (i === 0) { alert('Cannot remove the organizer'); return; }
+      if (!confirm('Remove this participant?')) return;
+      const updated = contestants.filter((_, idx) => idx !== i);
+      const remap = (obj) => {
+        const next = {};
+        Object.entries(obj || {}).forEach(([k,v]) => {
+          const ik = parseInt(k,10);
+          if (ik === i) return;
+          const newIndex = ik > i ? ik - 1 : ik;
+          next[newIndex] = v;
+        });
+        return next;
+      };
+      const a = remap(accepted);
+      const hd = remap(hostDates);
+      const ht = remap(hostTimes);
+      const sc = remapDeep(scores, i);
+      const cm = remapDeep(comments, i);
+      setContestants(updated); setAccepted(a); setHostDates(hd); setHostTimes(ht); setScores(sc); setComments(cm);
+      const order = prepareHostingOrderChrono(updated, hd);
+      saveGame({ contestants: updated, accepted: a, hostDates: hd, hostTimes: ht, scores: sc, comments: cm, hostingOrder: order });
+    };
+
     const getContestantLink = (i) => `${window.location.href.split('?')[0]}?game=${gameId}&c=${i}`;
     const copyLink = (i) => { navigator.clipboard.writeText(getContestantLink(i)); setCopiedIndex(i); setTimeout(()=>setCopiedIndex(null),2000); };
 
-    // RSVP and date selection with validation
     const selectDateFor = (index, isoDate, time) => {
       try {
         const selectedDate = new Date(isoDate);
-        const today = new Date();
-        today.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
         selectedDate.setHours(0,0,0,0);
         if (isNaN(selectedDate.getTime())) { alert('Invalid date'); return false; }
         if (selectedDate < today) { alert('Cannot select a date in the past'); return false; }
 
-        // allow re-selecting own date; block duplicates from others
         const conflict = Object.entries(hostDates).find(([k,v]) => v === isoDate && parseInt(k,10) !== index);
         if (conflict) { alert('That date is already chosen by someone else. Please pick a different date.'); return false; }
 
@@ -359,7 +342,6 @@
     const unacceptInvitation = (index) => { const a = {...accepted}; delete a[index]; setAccepted(a); saveGame({ accepted: a }); };
     const declineInvitation = (index) => { if (!confirm('Decline invitation? This will clear your date selection.')) return; const hd={...hostDates}; delete hd[index]; const a={...accepted}; delete a[index]; setHostDates(hd); setAccepted(a); saveGame({ hostDates: hd, accepted: a }); };
 
-    // organiser checks
     const canOrganiserStart = () => {
       if (contestants.length < 2) return false;
       for (let i=0;i<contestants.length;i++) {
@@ -382,11 +364,9 @@
       return order;
     };
 
-    // start competition - ensures hostingOrder saved
     const startCompetition = () => {
       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
       const order = prepareHostingOrderChrono();
-      // init scores/comments
       const s = {}, c = {};
       contestants.forEach((_, h) => {
         s[h] = {}; c[h] = {};
@@ -396,16 +376,27 @@
       setCurrentRound(0);
       setGameStarted(true);
       setGameState('active');
-      saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order });
+      saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order, gameState: 'active' });
     };
 
-    // ensure hostingOrder exists on reload/start
+    useEffect(() => {
+      if (!gameId) return;
+      const handler = (e) => {
+        // other tabs changed the same game's storage key
+        if (e.key === gameId) {
+          loadGame(gameId);
+        }
+      };
+      window.addEventListener('storage', handler);
+      return () => window.removeEventListener('storage', handler);
+    }, [gameId]);
+
     useEffect(() => {
       if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
         const order = prepareHostingOrderChrono();
         saveGame({ hostingOrder: order });
       }
-    }, [gameStarted]);
+    }, [gameStarted, contestants, hostDates]);
 
     const submitScore = () => {
       if (!gameStarted) return;
@@ -424,11 +415,6 @@
     };
 
     const hasAllScored = (hostIndex) => { if (!scores[hostIndex]) return false; return Object.values(scores[hostIndex]).every(v => v !== null); };
-    const allRoundsComplete = () => contestants.every((_,i)=>hasAllScored(i));
-    const finishCompetition = () => { if (!gameStarted) return; setGameState('results'); };
-
-    const resetGame = async () => { if (!confirm('Clear saved competition and start new?')) return; await window.storage.delete(gameId); window.location.href = window.location.href.split('?')[0]; };
-
     const calculateTotals = () => {
       const maxScore = (contestants.length - 1) * 10;
       const totals = contestants.map((n, idx) => {
@@ -440,7 +426,6 @@
       return totals;
     };
 
-    // derived UI
     const organiser = myContestantId === 0;
     const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
     const hostName = contestants[hostIdx] ?? null;
@@ -448,29 +433,14 @@
     const scoredCount = Object.values(currentScores).filter(s => s !== null).length;
     const totalGuests = Math.max(0, contestants.length - 1);
     const iHaveScored = (myContestantId !== null && myContestantId !== hostIdx && scores[hostIdx]?.[myContestantId] !== null);
-
-    const disabledDatesSet = useMemo(()=> {
-      const set = new Set();
-      Object.entries(hostDates).forEach(([k,v]) => { if (v) set.add(v); });
-      return set;
-    }, [hostDates]);
-
+    const disabledDatesSet = useMemo(()=> { const set = new Set(); Object.entries(hostDates).forEach(([k,v]) => { if (v) set.add(v); }); return set; }, [hostDates]);
     const myAccepted = myContestantId !== null ? !!accepted[myContestantId] : false;
     const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
     const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
 
-    useEffect(()=> {
-      // ensure hostingOrder created if gameStarted true
-      if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
-        const order = prepareHostingOrderChrono();
-        saveGame({ hostingOrder: order });
-      }
-    }, [gameStarted, contestants, hostDates]);
-
-    // UI Rendering
     if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
 
-    // SETUP
+    // Setup UI (unchanged)...
     if (gameState === 'setup') {
       return (
         <div className="container">
@@ -538,9 +508,8 @@
       );
     }
 
-    // ACTIVE stage
+    // Active UI...
     if (gameState === 'active') {
-      // If the user is a player and hasn't accepted yet -> show RSVP flow
       if (myContestantId !== null && !myAccepted && !gameStarted) {
         const disabledForMe = new Set(Object.entries(hostDates).filter(([k,v]) => parseInt(k,10) !== myContestantId && v).map(([_,v])=>v));
         const today = new Date(); today.setHours(0,0,0,0);
@@ -578,7 +547,6 @@
         );
       }
 
-      // Otherwise show main active page
       if (!gameStarted) {
         const acceptedCount = Object.values(accepted).filter(Boolean).length;
         return (
@@ -662,7 +630,7 @@
         );
       }
 
-      // GAME STARTED: scoring phase
+      // Game started: scoring
       const totals = calculateTotals();
       return (
         <div className="container">
@@ -730,7 +698,8 @@
                 currentRound < contestants.length - 1 ? (
                   <button className="btn-success" onClick={() => { const nr = currentRound + 1; setCurrentRound(nr); saveGame({ currentRound: nr }); }}>Next Dinner Party →</button>
                 ) : (
-                  <button className="btn-primary" onClick={() => { setGameState('results'); saveGame({}); }}>🏆 View Final Results</button>
+                  // IMPORTANT: persist change to gameState so other tabs know to show results
+                  <button className="btn-primary" onClick={async () => { await saveGame({ gameState: 'results' }); setGameState('results'); }}>🏆 View Final Results</button>
                 )
               ) : ( !organiser && hasAllScored(hostIdx) ? <div className="muted">All scores submitted — waiting for organiser to progress.</div> : null )}
             </div>
@@ -756,7 +725,6 @@
       );
     }
 
-    // RESULTS
     if (gameState === 'results') {
       const results = calculateTotals();
       const topScore = results[0]?.total || 0;
@@ -814,7 +782,7 @@
             </div>
 
             <div style={{marginTop:12}}>
-              {myContestantId === 0 ? <button className="btn-primary" onClick={resetGame}>Start New Competition</button> : <div style={{textAlign:'center', padding:10, background:'#f3f4f6', borderRadius:8}}><p className="muted">Only the organiser can start a new competition.</p></div>}
+              {myContestantId === 0 ? <button className="btn-primary" onClick={async () => { if (!confirm('Start a fresh competition? This will clear current game data.')) return; await window.storage.delete(gameId); window.location.href = window.location.href.split('?')[0]; }}>Start New Competition</button> : <div style={{textAlign:'center', padding:10, background:'#f3f4f6', borderRadius:8}}><p className="muted">Only the organiser can start a new competition.</p></div>}
             </div>
           </div>
         </div>
