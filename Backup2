@@ -1,1 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Culinary Quest</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #334155, #57534e, #1e293b);
+      min-height: 100vh;
+      color: #1f2937;
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; }
+    .card { background: white; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .title { color: white; text-align: center; font-size: 2.5rem; margin-bottom: 1rem; }
+    .subtitle { color: white; text-align: center; font-size: 1.2rem; margin-bottom: 2rem; }
+    input, textarea { width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; }
+    input:focus, textarea:focus { outline: none; border-color: #ea580c; }
+    button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #dc2626; color: white; width: 100%; margin-top: 0.5rem; }
+    .btn-primary:hover:not(:disabled) { background: #b91c1c; }
+    .btn-secondary { background: #ea580c; color: white; }
+    .btn-secondary:hover:not(:disabled) { background: #c2410c; }
+    .btn-success { background: #16a34a; color: white; width: 100%; }
+    .list-item { display: flex; justify-content: space-between; padding: 0.75rem; background: #fef3c7; border-radius: 8px; margin-bottom: 0.5rem; }
+    .alert { padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 1.5rem; }
+    .alert-amber { background: #fef3c7; border: 2px solid #f59e0b; }
+    .alert-green { background: #d1fae5; border: 2px solid #10b981; }
+    .progress-bar { height: 1rem; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin: 1rem 0; }
+    .progress-fill { height: 100%; background: #ea580c; transition: width 0.3s; }
+    .schedule-item { padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; }
+    .schedule-current { background: #ea580c; color: white; font-weight: bold; }
+    .schedule-complete { background: #d1fae5; }
+    .schedule-pending { background: #f3f4f6; color: #6b7280; }
+    .results-box { background: #fef3c7; padding: 1.5rem; border-radius: 12px; border: 4px solid #f59e0b; margin-bottom: 2rem; text-align: center; }
+    .winner-name { font-size: 2.5rem; color: #ea580c; font-weight: bold; }
+    .leaderboard-item { display: flex; justify-content: space-between; padding: 1rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
 
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    if (!window.storage) {
+      window.storage = {
+        async get(key) {
+          const v = localStorage.getItem(key);
+          return v ? { value: v } : null;
+        },
+        async set(key, v) { localStorage.setItem(key, v); },
+        async delete(key) { localStorage.removeItem(key); }
+      };
+    }
+
+    function CulinaryQuest() {
+      const [gameState, setGameState] = useState('loading');
+      const [gameId, setGameId] = useState(null);
+      const [contestants, setContestants] = useState([]);
+      const [currentRound, setCurrentRound] = useState(0);
+      const [scores, setScores] = useState({});
+      const [comments, setComments] = useState({});
+      const [hostingOrder, setHostingOrder] = useState([]);
+      const [newContestantName, setNewContestantName] = useState('');
+      const [myContestantId, setMyContestantId] = useState(null);
+      const [tempScore, setTempScore] = useState('');
+      const [tempComment, setTempComment] = useState('');
+      const [copiedIndex, setCopiedIndex] = useState(null);
+      const [showLinks, setShowLinks] = useState(false);
+
+      useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const g = params.get('game');
+        const c = params.get('c');
+        if (c) setMyContestantId(parseInt(c));
+        if (g) { setGameId(g); loadGame(g); }
+        else {
+          const newId = 'culinaryquest_' + Math.random().toString(36).substr(2, 9);
+          setGameId(newId);
+          setGameState('setup');
+        }
+      }, []);
+
+      const loadGame = async (g) => {
+        const d = await window.storage.get(g);
+        if (d && d.value) {
+          const data = JSON.parse(d.value);
+          setContestants(data.contestants || []);
+          setCurrentRound(data.currentRound || 0);
+          setScores(data.scores || {});
+          setComments(data.comments || {});
+          setHostingOrder(data.hostingOrder || []);
+          setGameState(data.contestants?.length ? 'active' : 'setup');
+        } else setGameState('setup');
+      };
+
+      const saveGame = async (data) => {
+        await window.storage.set(gameId, JSON.stringify(data));
+      };
+
+      const addContestant = () => {
+        if (newContestantName.trim() && contestants.length < 6) {
+          const updated = [...contestants, newContestantName.trim()];
+          setContestants(updated);
+          setNewContestantName('');
+        }
+      };
+
+      const removeContestant = (i) => {
+        setContestants(contestants.filter((_, x) => x !== i));
+      };
+
+      const getContestantLink = (i) => {
+        const base = window.location.href.split('?')[0];
+        return `${base}?game=${gameId}&c=${i}`;
+      };
+
+      const copyLink = (i) => {
+        const link = getContestantLink(i);
+        navigator.clipboard.writeText(link);
+        setCopiedIndex(i);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      };
+
+      const startGame = () => {
+        if (contestants.length >= 2) {
+          const order = [...Array(contestants.length).keys()];
+          for (let i = order.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [order[i], order[j]] = [order[j], order[i]];
+          }
+          const s = {}, c = {};
+          contestants.forEach((_, h) => {
+            s[h] = {}; c[h] = {};
+            contestants.forEach((__, x) => {
+              if (h !== x) { s[h][x] = null; c[h][x] = ''; }
+            });
+          });
+          setScores(s); setComments(c); setHostingOrder(order);
+          saveGame({ contestants, currentRound: 0, scores: s, comments: c, hostingOrder: order });
+          setShowLinks(true);
+        }
+      };
+
+      const submitScore = () => {
+        const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
+        if (myContestantId === hostIdx) {
+          alert("Hosts can't score themselves.");
+          return;
+        }
+        if (myContestantId !== null && tempScore && parseInt(tempScore) >= 0 && parseInt(tempScore) <= 10) {
+          const s = { ...scores }, c = { ...comments };
+          s[hostIdx][myContestantId] = parseInt(tempScore);
+          c[hostIdx][myContestantId] = tempComment;
+          setScores(s); setComments(c);
+          saveGame({ contestants, currentRound, scores: s, comments: c, hostingOrder });
+          setTempScore(''); setTempComment('');
+        }
+      };
+
+      const nextRound = () => {
+        if (currentRound < contestants.length - 1) {
+          const newR = currentRound + 1;
+          setCurrentRound(newR);
+          saveGame({ contestants, currentRound: newR, scores, comments, hostingOrder });
+        }
+      };
+
+      const finishCompetition = () => setGameState('results');
+
+      const resetGame = async () => {
+        await window.storage.delete(gameId);
+        window.location.href = window.location.href.split('?')[0];
+      };
+
+      const calculateTotals = () => {
+        const maxScore = (contestants.length - 1) * 10;
+        return contestants.map((n, i) => {
+          let total = 0;
+          if (scores[i]) Object.values(scores[i]).forEach(s => { if (s !== null) total += s; });
+          return { name: n, total, maxScore };
+        }).sort((a, b) => b.total - a.total);
+      };
+
+      const hasAllScored = (i) => scores[i] && Object.values(scores[i]).every(s => s !== null);
+      const allRoundsComplete = () => contestants.every((_, i) => hasAllScored(i));
+      const hasMyScored = (i) => myContestantId !== null && myContestantId !== i && scores[i]?.[myContestantId] !== null;
+
+      if (gameState === 'results') {
+        const results = calculateTotals();
+        const topScore = results[0]?.total || 0;
+        const winners = results.filter(r => r.total === topScore);
+        const isTie = winners.length > 1;
+        return (
+          <div className="container">
+            <h1 className="title">🏆 Final Results</h1>
+            <div className="card">
+              <div className="results-box">
+                {isTie ? (
+                  <>
+                    <h2>🤝 It’s a Tie!</h2>
+                    {winners.map((w, i) => (
+                      <p key={i} className="winner-name">{w.name}</p>
+                    ))}
+                    <p style={{fontSize:'1.5rem'}}>Score: {topScore}/{winners[0].maxScore}</p>
+                  </>
+                ) : (
+                  <>
+                    <h2>🎉 Winner 🎉</h2>
+                    <p className="winner-name">{winners[0].name}</p>
+                    <p style={{fontSize:'1.5rem'}}>Score: {winners[0].total}/{winners[0].maxScore}</p>
+                  </>
+                )}
+              </div>
+              <h3>Final Leaderboard</h3>
+              {results.map((r, i) => (
+                <div key={i} className="leaderboard-item">
+                  <div><span>#{i + 1}</span> <span>{r.name}</span></div>
+                  <span style={{color:'#ea580c', fontWeight:'bold'}}>{r.total}/{r.maxScore}</span>
+                </div>
+              ))}
+              <div style={{marginTop:'2rem'}}>
+                <h3>All Scores & Comments</h3>
+                {contestants.map((host, hI) => (
+                  <div key={hI} style={{background:'#fef3c7', padding:'1rem', borderRadius:'8px', marginBottom:'1rem'}}>
+                    <h4>{host}'s Dinner Party</h4>
+                    {contestants.map((scorer, sI) => {
+                      if (hI === sI) return null;
+                      const sc = scores[hI]?.[sI]; const cm = comments[hI]?.[sI];
+                      return (
+                        <div key={sI} style={{background:'white', padding:'0.75rem', borderRadius:'6px', marginBottom:'0.5rem'}}>
+                          <div style={{display:'flex', justifyContent:'space-between'}}>
+                            <span>{scorer}:</span>
+                            <span style={{color:'#ea580c', fontWeight:'bold'}}>{sc}/10</span>
+                          </div>
+                          {cm && <p style={{fontStyle:'italic', color:'#6b7280'}}>"{cm}"</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              {myContestantId === 0 && (
+                <button onClick={resetGame} className="btn-primary">Start New Competition</button>
+              )}
+              {myContestantId !== 0 && myContestantId !== null && (
+                <div style={{textAlign:'center', background:'#f3f4f6', padding:'1rem', borderRadius:'8px'}}>
+                  <p>Only the organiser can start a new competition.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
+      if (gameState === 'setup') {
+        return (
+          <div className="container">
+            <h1 className="title">🍽️ Culinary Quest</h1>
+            <p className="subtitle">Every Guest on a Quest</p>
+            {!showLinks ? (
+              <div className="card">
+                <h2>Setup Your Competition</h2>
+                <input value={newContestantName} onChange={(e)=>setNewContestantName(e.target.value)} placeholder="Guest name" />
+                <button onClick={addContestant} disabled={!newContestantName.trim() || contestants.length>=6} className="btn-secondary">+ Add</button>
+                {contestants.map((n,i)=>(<div key={i} className="list-item"><span>{n}</span><button onClick={()=>removeContestant(i)} style={{background:'#ef4444',color:'white'}}>Remove</button></div>))}
+                <button onClick={startGame} disabled={contestants.length<2} className="btn-primary">Create Competition</button>
+              </div>
+            ):(
+              <div className="card">
+                <h2>Share Invite Links</h2>
+                {contestants.map((n,i)=>(
+                  <div key={i} className="list-item">
+                    <strong>{n}{i===0 && <span style={{background:'#3b82f6',color:'white',padding:'0.25rem 0.5rem',marginLeft:'0.5rem'}}>YOU</span>}</strong>
+                    <button onClick={()=>copyLink(i)} className="btn-secondary">{copiedIndex===i?'✓ Copied!':'📋 Copy'}</button>
+                  </div>
+                ))}
+                <button onClick={()=>setGameState('active')} className="btn-success">Done - Start Competition</button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      const hostIdx = hostingOrder.length>0?hostingOrder[currentRound]:currentRound;
+      const host = contestants[hostIdx];
+      const currentScores = scores[hostIdx]||{};
+      const scoredCount = Object.values(currentScores).filter(s=>s!==null).length;
+      const totalGuests = contestants.length-1;
+      const isHost = myContestantId===hostIdx;
+      const organiserView = myContestantId===0;
+      const iHaveScored = hasMyScored(hostIdx);
+
+      return (
+        <div className="container">
+          <h1 className="title">🍽️ Culinary Quest</h1>
+          <p className="subtitle">Welcome, {contestants[myContestantId]}</p>
+          <div className="card">
+            <h2>Round {currentRound+1} of {contestants.length}</h2>
+            <div style={{background:'#fed7aa',padding:'1rem',borderRadius:'8px',marginBottom:'1rem'}}>
+              <p>Tonight's Host:</p>
+              <h2 style={{color:'#ea580c'}}>{host}</h2>
+            </div>
+            <div>
+              <p><strong>Scores Submitted:</strong> {scoredCount}/{totalGuests}</p>
+              <div className="progress-bar"><div className="progress-fill" style={{width:`${(scoredCount/totalGuests)*100}%`}}></div></div>
+            </div>
+
+            {isHost && <div className="alert alert-amber"><p>🍽️ You're Tonight's Host! Sit back and enjoy.</p></div>}
+            {!isHost && iHaveScored && <div className="alert alert-green"><p>✓ You’ve submitted your score.</p></div>}
+            {!isHost && !iHaveScored && (
+              <div className="card" style={{background:'#f3f4f6'}}>
+                <h3>Submit Your Score for {host}</h3>
+                <input type="number" placeholder="Score (0–10)" min="0" max="10" value={tempScore} onChange={(e)=>setTempScore(e.target.value)} />
+                <textarea rows="3" placeholder="Add your comments..." value={tempComment} onChange={(e)=>setTempComment(e.target.value)}></textarea>
+                <button onClick={submitScore} className="btn-primary">Submit Score</button>
+              </div>
+            )}
+
+            {organiserView && (
+              <div style={{marginTop:'1rem'}}>
+                <h4>Score Status</h4>
+                {contestants.map((n,i)=>{
+                  if (i===hostIdx) return null;
+                  return <div key={i} style={{padding:'0.5rem',borderBottom:'1px solid #e5e7eb'}}>{n}: {currentScores[i]!==null?'✅ Scored':'⏳ Pending'}</div>;
+                })}
+              </div>
+            )}
+
+            {!organiserView && (
+              <div style={{marginTop:'1rem'}}>
+                <p style={{color:'#6b7280'}}>Waiting for others to submit scores...</p>
+              </div>
+            )}
+
+            {organiserView && hasAllScored(hostIdx) && (
+              <button onClick={currentRound<contestants.length-1?nextRound:finishCompetition} className="btn-success">
+                {currentRound<contestants.length-1?'Next Dinner Party':'🏆 View Final Results'}
+              </button>
+            )}
+            {!organiserView && hasAllScored(hostIdx) && (
+              <div className="alert alert-green"><p>All scores submitted! Waiting for organiser...</p></div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
+  </script>
+</body>
+</html>
