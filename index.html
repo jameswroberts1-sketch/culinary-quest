@@ -588,10 +588,10 @@
                       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
                       const order = prepareHostingOrderChrono();
                       const scheduleText = order
-  .map((i, idx) => `${idx + 1}. ${contestants[i]} — ${formatDateReadable(hostDates[i], hostTimes[i])}`)
-  .join('\n');
-if (!confirm('Start competition with this schedule:\n\n' + scheduleText)) return;
-startCompetition();
+                        .map((i, idx) => `${idx + 1}. ${contestants[i]} — ${formatDateReadable(hostDates[i], hostTimes[i])}`)
+                        .join('\n');
+                      if (!confirm('Start competition with this schedule:\n\n' + scheduleText)) return;
+                      startCompetition();
                     }}>
                       Start Competition
                     </button>
