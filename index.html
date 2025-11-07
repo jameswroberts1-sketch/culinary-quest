@@ -1,787 +1,482 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Firebase Realtime</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Culinary Quest — Organiser Setup (Prototype)</title>
 
-  <!-- React & Babel (dev-friendly) -->
+  <!-- React (UMD) + Babel (for convenience in single file) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
-  <!-- Firebase SDK (module) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, set, remove, get, child } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-    // Your config (with europe-west1 databaseURL)
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDfwN_5WYj9AKFqDWkEEIrUIwjL8XaZ7oQ",
-      authDomain: "culinary-quest-f2777.firebaseapp.com",
-      databaseURL: "https://culinary-quest-f2777-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "culinary-quest-f2777",
-      storageBucket: "culinary-quest-f2777.firebasestorage.app",
-      messagingSenderId: "214188908997",
-      appId: "1:214188908997:web:519064cad50efe615e2bac",
-      measurementId: "G-EMF9YGM2LT"
-    };
-
-    (function initStorage(){
-      let app = null, db = null, enabled = false;
-      try {
-        app = initializeApp(FIREBASE_CONFIG);
-        db = getDatabase(app);
-        enabled = true;
-        console.log("[CQ] Firebase enabled");
-      } catch (e) {
-        console.warn("[CQ] Firebase init failed; falling back to localStorage:", e);
-      }
-
-      const ls = {
-        async get(k){ const v = localStorage.getItem(k); return v ? { value: v } : null; },
-        async set(k,v){ localStorage.setItem(k, v); },
-        async delete(k){ localStorage.removeItem(k); },
-        subscribe(k, cb){
-          const h = (e)=>{ if (e.key === k && e.newValue) cb(e.newValue); };
-          window.addEventListener('storage', h);
-          return ()=>window.removeEventListener('storage', h);
-        }
-      };
-
-      const rtdb = {
-        async get(k){ const snap = await get(child(ref(db), `games/${k}`)); return snap.exists()? { value: JSON.stringify(snap.val()) } : null; },
-        async set(k,v){ await set(ref(db, `games/${k}`), JSON.parse(v)); },
-        async delete(k){ await remove(ref(db, `games/${k}`)); },
-        subscribe(k, cb){ return onValue(ref(db, `games/${k}`), (snap)=>{ if (snap.exists()) cb(JSON.stringify(snap.val())); }); }
-      };
-
-      window.__CQ_STORAGE__ = enabled ? rtdb : ls;
-      window.__CQ_STORAGE_ENABLED__ = enabled;
-    })();
-  </script>
-
   <style>
-    * { box-sizing:border-box; margin:0; padding:0; }
-    html, body { min-height:100%; }
-    body { font-family:-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial; transition:background 300ms ease; color:#1f2937; }
-    body.theme-light { background:linear-gradient(135deg,#fff8ec,#fdf4e3,#fef9c3); }
-    body.theme-dark  { background:linear-gradient(135deg,#334155,#57534e,#1e293b); }
-
-    .container{max-width:1000px;margin:0 auto;padding:1rem;}
-    .card{background:#fff;border-radius:12px;padding:1.25rem;box-shadow:0 10px 24px rgba(0,0,0,.12);margin-bottom:1rem;}
-    .title{text-align:center;font-size:2rem;margin-bottom:.25rem;font-weight:900;}
-    .subtitle{text-align:center;margin-bottom:1rem;opacity:.95;}
-    .title-invert{color:#fff;} .subtitle-invert{color:#fff;opacity:.95;}
-
-    input,textarea{padding:.5rem;border-radius:8px;border:1px solid #e5e7eb;width:100%;font-size:16px;} /* 16px => no iOS zoom */
-    textarea{min-height:64px;resize:vertical;}
-
-    button{cursor:pointer;border:none;border-radius:999px;padding:.8rem 1.2rem;font-weight:700;}
-    .btn-lg{padding:1rem 1.4rem;font-size:1.05rem;}
-    .btn-primary{background:#dc2626;color:#fff;}
-    .btn-success{background:#16a34a;color:#fff;}
-    .btn-secondary{background:#ea580c;color:#fff;}
-    .btn-ghost{background:transparent;border:1px solid #e5e7eb;color:#374151;padding:.55rem .9rem;border-radius:8px;}
-    .btn-outline-red{background:transparent;color:#dc2626;border:2px solid #dc2626;}
-    .btn-outline-red:hover{background:#fee2e2;}
-    .muted{color:#6b7280;}
-    .list{margin-top:.75rem;}
-    .list-item{padding:.6rem;border-radius:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;border:1px solid #f1f5f9;margin-bottom:.5rem;}
-    .badge{padding:.25rem .5rem;border-radius:6px;font-size:.8rem;color:#fff;background:#3b82f6;}
-    .progress-bar{height:10px;background:#e5e7eb;border-radius:8px;overflow:hidden;margin-top:.5rem;}
-    .progress-fill{height:100%;background:#ea580c;transition:width .25s ease;}
-    .wait-box{background:#dbeafe;border:1px solid #bfdbfe;padding:.75rem;border-radius:8px;color:#1e3a8a;margin-top:12px;text-align:center;}
-
-    .calendar{width:100%;max-width:420px;margin:.75rem auto 0;}
-    .cal-header{display:flex;justify-content:space-between;align-items:center;padding:.5rem;}
-    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:.5rem;}
-    .cal-day{height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px;user-select:none;}
-    .cal-day.disabled{background:#f3f4f6;color:#9ca3af;cursor:not-allowed;}
-    .cal-day.available{background:#fff;cursor:pointer;border:1px solid #e5e7eb;}
-    .cal-day.selected{background:#ea580c;color:#fff;font-weight:700;}
-    .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:6px 0;color:#6b7280;font-size:.85rem;text-align:center;}
-
-    .wizard-card{max-width:800px;margin:1.5rem auto;padding:1.5rem;}
-    .welcome-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1rem;padding:1rem;}
-    .option-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;}
-    @media (min-width:700px){.option-grid{grid-template-columns:1fr 1fr;}}
-    .option-card{border:2px solid #e5e7eb;border-radius:12px;padding:1rem;background:#fff;cursor:pointer;transition:box-shadow .2s,border-color .2s;}
-    .option-card.selected{border-color:#f59e0b;box-shadow:0 6px 20px rgba(245,158,11,0.18);}
-    .option-title{font-weight:800;margin-bottom:.25rem;}
-    .option-desc{color:#6b7280;font-size:.95rem;}
-
-    /* Category grid (mobile-safe) */
-    .cat-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:.5rem;}
-    @media (min-width:600px){.cat-grid{grid-template-columns:1fr 1fr;}}
-    .cat-chip{display:flex;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem .8rem;background:#fff;width:100%;}
-    .cat-chip input{width:20px;height:20px;margin:0;}
-    .cat-chip span{flex:1 1 auto;line-height:1.2;}
-
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;animation:modalOverlayIn .4s ease-out forwards;}
-    .modal{background:#fff;padding:1.5rem;border-radius:12px;max-width:520px;width:94%;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transform:translateY(18px);animation:modalCardIn .4s ease-out forwards;}
-    @keyframes modalOverlayIn{from{opacity:0}to{opacity:1}}
-    @keyframes modalCardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-
-    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1100;background:rgba(17,24,39,.95);color:#fff;padding:.6rem 1rem;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.32);display:flex;align-items:center;gap:.6rem;font-weight:600;opacity:0;}
-    @keyframes toastIn{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
-    @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,18px)}}
-    .toast.success{background:#064e3b;} .toast.error{background:#7f1d1d;}
-
-    .logo-wrap{width:140px;height:140px;}
-    .sparkle{animation:sparkle 1.2s ease-out .4s 1 both;transform-origin:center;}
-    @keyframes sparkle{0%{opacity:0;transform:scale(.6) rotate(0)}25%{opacity:1;transform:scale(1) rotate(10deg)}60%{opacity:1;transform:scale(1.05) rotate(-6deg)}100%{opacity:0;transform:scale(.6) rotate(0)}}
-
-    @media (max-width:900px){.space-between{flex-direction:column;align-items:flex-start;gap:8px;}}
-    @media (max-width:600px){.calendar{max-width:100%;}.cal-day{height:36px;font-size:.85rem;}}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100%}
+    body{font-family:-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:linear-gradient(135deg,#fff8ec,#fdf4e3,#fef9c3);color:#1f2937}
+    .container{max-width:980px;margin:0 auto;padding:16px}
+    .card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 10px 24px rgba(0,0,0,.12);margin:12px auto}
+    .title{font-size:1.9rem;font-weight:900;text-align:center;margin-bottom:6px}
+    .subtitle{opacity:.95;text-align:center;margin-bottom:12px}
+    .btn{border:none;border-radius:999px;padding:.85rem 1.2rem;font-weight:800;cursor:pointer}
+    .btn-lg{padding:1rem 1.45rem;font-size:1.05rem}
+    .btn-success{background:#16a34a;color:#fff}
+    .btn-danger{background:#dc2626;color:#fff}
+    .btn-ghost{background:transparent;border:1px solid #e5e7eb;color:#374151;border-radius:10px;padding:.55rem .9rem}
+    .muted{color:#6b7280}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .actions{display:flex;gap:12px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+    input,textarea{width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem .75rem;font-size:16px}
+    textarea{min-height:90px;resize:vertical}
+    .list{margin-top:10px}
+    .list-item{display:flex;justify-content:space-between;align-items:center;padding:.65rem .8rem;border:1px solid #eef2f7;border-radius:10px;background:#fff;margin-bottom:8px}
+    .badge{background:#3b82f6;color:#fff;font-size:.78rem;border-radius:8px;padding:.15rem .45rem;margin-left:8px}
+    .copy{font-size:.85rem;color:#6b7280;word-break:break-all}
+    .grid-2{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
+    .option{border:2px solid #e5e7eb;border-radius:12px;padding:12px;background:#fff;cursor:pointer;transition:box-shadow .2s,border-color .2s}
+    .option.selected{border-color:#f59e0b;box-shadow:0 6px 20px rgba(245,158,11,0.18)}
+    .option-title{font-weight:900;margin-bottom:3px}
+    .option-desc{color:#6b7280}
+    .cat-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+    @media(min-width:560px){.cat-grid{grid-template-columns:1fr 1fr}}
+    .cat-chip{display:flex;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem .8rem;background:#fff}
+    .cat-chip input{width:20px;height:20px;margin:0}
+    .lock{font-size:.75rem;color:#9ca3af;margin-left:6px}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1100;background:#111827;color:#fff;padding:.6rem 1rem;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-weight:700;opacity:0}
+    @keyframes tin{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
+    @keyframes tout{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,18px)}}
+    .toast.show{animation:tin .28s ease-out forwards}
+    .fade{opacity:0;animation:fade .28s ease-out forwards}
+    @keyframes fade{from{opacity:0}to{opacity:1}}
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1200}
+    .modal{background:#fff;border-radius:12px;max-width:520px;width:92%;padding:16px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+    .modal h3{margin-bottom:6px}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    /* Small circular logo */
+    .logo{width:100px;height:100px;margin:10px auto 0;display:block}
   </style>
 </head>
-<body class="theme-light">
+<body>
   <div id="root"></div>
 
+  <!-- Embedded copy (messages) -->
   <script>
-    // Minimal toast
-    window.showToast = function(msg='Done', type='success', dur=1500){
-      const t=document.createElement('div');
-      t.className='toast '+(type==='error'?'error':'success');
-      t.textContent=msg; document.body.appendChild(t);
-      t.style.animation='toastIn .32s ease-out forwards';
-      setTimeout(()=>{ t.style.animation='toastOut .45s ease-in forwards'; setTimeout(()=>t.remove(),460); }, dur);
+    window.COPY = {
+      "splash": [
+        "🍽️ Cook. Compete. Conquer.",
+        "🔥 Your dining table just became centre stage!",
+        "🥇 Who will be crowned the Culinary Conquistador?",
+        "🎭 Every bite earns a score. Every dish tells a story.",
+        "🥂 One kitchen. One crown. Infinite bragging rights.",
+        "🎬 Because every great meal deserves a little drama.",
+        "🔥 Fire up the oven — it’s showtime!",
+        "✨ Serve your best. Score the rest."
+      ],
+      "organiser": {
+        "game_created": "🎉 Culinary Quest ready! Let the dinner drama begin.",
+        "guest_added": "👋 A new challenger enters the kitchen!",
+        "link_copied": "🔗 Invite link copied — your contestant awaits!",
+        "all_dates_set": "📅 Schedule locked and loaded — it’s almost showtime!",
+        "game_started": "🎬 And we’re live! Round One of the Quest begins now.",
+        "next_round": "🍷 On to the next host — keep those scores coming!",
+        "all_scores_in": "🏁 Scores complete! Ready to reveal the Culinary Conquistador?",
+        "competition_ended": "🎉 What a feast! Time to announce your champion.",
+        "prize_reminder": "💡 Don’t forget — the winner takes the mystery reward!"
+      },
+      "player": {
+        "invitation_accepted": "✅ You’re officially in the Quest — time to bring your A-game!",
+        "hosting_date_chosen": "📆 Great pick! Your culinary spotlight awaits.",
+        "score_submitted": "🥄 Score locked in — let’s see how the rankings simmer.",
+        "host_cannot_score": "🍽️ Tonight you’re the star — no judging your own masterpiece!",
+        "waiting_for_organiser": "⏳ Hang tight — the Organiser’s prepping the next course.",
+        "voting_not_open": "⏰ The judging table opens soon. Keep your forks poised.",
+        "competition_complete": "🏆 That’s a wrap! The final results are in.",
+        "tie_result": "🤝 A draw! Two chefs, one crown — a true culinary cliffhanger."
+      },
+      "results": {
+        "winner_reveal": "🎺 Drumroll, please... presenting our Culinary Conquistador!",
+        "tie_reveal": "🤝 It’s a tie! Two taste titans share the crown!",
+        "share_results": "📣 Spread the glory — your Quest is complete!",
+        "start_new_competition": "🔥 Ready for a rematch? A new Quest awaits!"
+      },
+      "easter_eggs": [
+        "🥘 Caution: excessive bragging rights ahead.",
+        "🍾 Someone’s about to dine out on this victory.",
+        "🎤 Remember, presentation counts — and so does your poker face.",
+        "🍰 Save room for dessert… and a dose of humble pie.",
+        "🎯 The only thing sharper than your knives should be your wit.",
+        "🥂 Cheers to good friends, great food, and questionable scoring."
+      ]
+    };
+    // Toast
+    window.showToast = function(msg='Done', dur=1500){
+      const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+      document.body.appendChild(t); t.classList.add('show');
+      setTimeout(()=>{ t.style.animation='tout .35s ease-in forwards'; setTimeout(()=>t.remove(),380); }, dur);
     };
   </script>
 
   <script type="text/babel">
-  const { useState, useEffect, useMemo, useRef } = React;
+    const { useState, useEffect } = React;
 
-  // Storage facade
-  const storage = {
-    async get(k){ return await window.__CQ_STORAGE__.get(k); },
-    async set(k,v){ return await window.__CQ_STORAGE__.set(k,v); },
-    async delete(k){ return await window.__CQ_STORAGE__.delete(k); },
-    subscribe(k, cb){ return window.__CQ_STORAGE__.subscribe(k, cb); },
-    enabled: ()=> !!window.__CQ_STORAGE_ENABLED__
-  };
-
-  // Helpers
-  const formatDateISO = (d) => { const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
-  const formatDateReadable = (iso, time) => { if(!iso) return 'Pending'; const d=new Date(iso+(time?`T${time}`:'T00:00')); const dt=d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); const tm=time?(' @ '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})) : ''; return dt+tm; };
-  const avg = a => !a?.length ? 0 : a.reduce((s,n)=>s+n,0)/a.length;
-
-  function Logo(){
-    const gold="#f59e0b";
-    return(
-      <svg className="logo-wrap" viewBox="0 0 120 120" aria-hidden="true">
-        <circle cx="60" cy="60" r="38" fill="#fff" stroke="#e5e7eb" strokeWidth="3"/>
-        <circle cx="60" cy="60" r="28" fill="#f9fafb"/>
-        <g transform="translate(36,30) rotate(-35 24 30)">
-          <rect x="22" y="18" width="4" height="32" rx="2" fill={gold}/>
-          <rect x="21" y="12" width="2" height="8" rx="1" fill={gold}/>
-          <rect x="23" y="12" width="2" height="8" rx="1" fill={gold}/>
-          <rect x="25" y="12" width="2" height="8" rx="1" fill={gold}/>
-          <rect x="27" y="12" width="2" height="8" rx="1" fill={gold}/>
-        </g>
-        <g transform="translate(54,30) rotate(30 6 30)">
-          <rect x="5" y="16" width="4" height="36" rx="2" fill={gold}/>
-          <path d="M7 6 C12 12, 12 14, 7 18 C2 14, 2 12, 7 6 Z" fill={gold}/>
-        </g>
-        <g className="sparkle" transform="translate(88,26)">
-          <path d="M6 0 L7.5 3.5 L11 5 L7.5 6.5 L6 10 L4.5 6.5 L1 5 L4.5 3.5 Z" fill={gold}/>
-        </g>
-      </svg>
-    );
-  }
-
-  function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }){
-    const today = new Date();
-    const start = selectedDate ? new Date(selectedDate) : today;
-    const [yy,setY]=useState(start.getFullYear()), [mm,setM]=useState(start.getMonth());
-    useEffect(()=>{ if(selectedDate){ const d=new Date(selectedDate); setY(d.getFullYear()); setM(d.getMonth()); }},[selectedDate]);
-    const first=new Date(yy,mm,1), wd=first.getDay(), days=new Date(yy,mm+1,0).getDate();
-    const cells=[]; for(let i=0;i<wd;i++) cells.push(null); for(let d=1;d<=days;d++) cells.push(new Date(yy,mm,d));
-    const minISO = formatDateISO(minDate instanceof Date ? minDate : today);
-    return(
-      <div className="calendar card">
-        <div className="cal-header"><button className="btn-ghost" onClick={()=>mm===0?(setY(yy-1),setM(11)):setM(mm-1)}>&larr;</button><div style={{fontWeight:700}}>{first.toLocaleString(undefined,{month:'long',year:'numeric'})}</div><button className="btn-ghost" onClick={()=>mm===11?(setY(yy+1),setM(0)):setM(mm+1)}>&rarr;</button></div>
-        <div className="cal-weekdays">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(w=><div key={w}>{w}</div>)}</div>
-        <div className="cal-grid">
-          {cells.map((c,i)=>{
-            if(!c) return <div key={i}></div>;
-            const iso=formatDateISO(c), isPast=iso<minISO, isDisabled=isPast||disabledDates.has(iso),
-                  isSel=selectedDate && formatDateISO(new Date(selectedDate))===iso,
-                  cls=isDisabled?'cal-day disabled':(isSel?'cal-day selected':'cal-day available');
-            return <div key={i} className={cls} onClick={()=>!isDisabled&&onSelect(iso)}>{c.getDate()}</div>;
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  function App(){
-    const [gameState,setGameState]=useState('loading'); // setup|active|terminated|results
-    const [uiStep,setUiStep]=useState('welcome');       // welcome|setup|addGuests
-    const [gameId,setGameId]=useState(null);
-    const [contestants,setContestants]=useState([]);
-    const [accepted,setAccepted]=useState({});
-    const [hostDates,setHostDates]=useState({});
-    const [hostTimes,setHostTimes]=useState({});
-    const [hostingOrder,setHostingOrder]=useState([]);
-    const [scores,setScores]=useState({});
-    const [comments,setComments]=useState({});
-    const [currentRound,setCurrentRound]=useState(0);
-    const [gameStarted,setGameStarted]=useState(false);
-
-    const [scoringMode,setScoringMode]=useState('simple');
-    const defaultCategories=[{name:'Menu',enabled:false},{name:'Table Setting',enabled:false},{name:'Food',enabled:false},{name:'Drinks',enabled:false},{name:'Entertainment',enabled:false}];
-    const [categories,setCategories]=useState(defaultCategories);
-
-    const [newContestantName,setNewContestantName]=useState('');
-    const [myContestantId,setMyContestantId]=useState(null);
-    const [tempScore,setTempScore]=useState('');
-    const [tempCategoryScores,setTempCategoryScores]=useState({});
-    const [tempComment,setTempComment]=useState('');
-    const [copiedIndex,setCopiedIndex]=useState(null);
-    const [showLinks,setShowLinks]=useState(false);
-    const [showStartModal,setShowStartModal]=useState(false);
-    const [scheduleText,setScheduleText]=useState([]);
-    const [showTerminateModal,setShowTerminateModal]=useState(false);
-    const [showDeleteConfirm,setShowDeleteConfirm]=useState(false);
-    const [showConfirmation,setShowConfirmation]=useState(false);
-    const debounceRef=useRef(null);
-    const realtimeUnsubRef=useRef(null);
-
-    // Theme
-    useEffect(()=>{
-      const light=(uiStep==='welcome'||uiStep==='setup'||uiStep==='addGuests')||(gameState==='active'&&!gameStarted);
-      document.body.classList.toggle('theme-light',light);
-      document.body.classList.toggle('theme-dark',!light);
-    },[uiStep,gameState,gameStarted]);
-
-    // URL + initial load + realtime subscribe
-    useEffect(()=>{
-      const params=new URLSearchParams(location.search);
-      const g=params.get('game'); const c=params.get('c');
-      if(c!==null && c!==undefined){ const pc=parseInt(c,10); if(!Number.isNaN(pc)) setMyContestantId(pc); }
-      if(g){ setGameId(g); hydrate(g); subscribe(g); }
-      else{
-        const newId='culinaryquest_'+Math.random().toString(36).slice(2,9);
-        setGameId(newId); setGameState('setup'); setUiStep('welcome');
-        // Seed game: organiser auto-accepted
-        const seed = { contestants:['Organiser'], accepted:{0:true}, gameState:'setup',
-                       hostDates:{},hostTimes:{},scores:{},comments:{},hostingOrder:[],currentRound:0,gameStarted:false,
-                       scoringMode:'simple', categories: defaultCategories };
-        storage.set(newId, JSON.stringify(seed));
-        const p = new URLSearchParams(location.search); p.set('game', newId); p.set('c', 0);
-        history.replaceState({}, '', `${location.pathname}?${p.toString()}`);
-        setMyContestantId(0);
-      }
-      return ()=>{ if(realtimeUnsubRef.current) try{ realtimeUnsubRef.current(); }catch(_){} };
-    },[]);
-
-    function subscribe(id){
-      if(realtimeUnsubRef.current) try{ realtimeUnsubRef.current(); }catch(_){}
-      realtimeUnsubRef.current = storage.subscribe(id, (json)=>{
-        try{ const parsed=JSON.parse(json); applyState(parsed, true); }catch(e){ console.warn('subscribe parse fail', e); }
-      });
-    }
-
-    function applyState(parsed, silent=false){
-      if(!parsed) return;
-      setContestants(parsed.contestants || []);
-      setAccepted(parsed.accepted || {});
-      setHostDates(parsed.hostDates || {});
-      setHostTimes(parsed.hostTimes || {});
-      setHostingOrder(parsed.hostingOrder || []);
-      setScores(parsed.scores || {});
-      setComments(parsed.comments || {});
-      setCurrentRound(parsed.currentRound || 0);
-      setGameStarted(!!parsed.gameStarted);
-      setScoringMode(parsed.scoringMode || 'simple');
-      setCategories(parsed.categories || defaultCategories);
-      setGameState(parsed.gameState || 'setup');
-      if(!silent) window.showToast('Synced', 'success', 800);
-    }
-
-    async function hydrate(id){
-      try{
-        const d = await storage.get(id);
-        if(d && d.value){ applyState(JSON.parse(d.value)); setUiStep('addGuests'); }
-        else { setGameState('setup'); setUiStep('welcome'); }
-      }catch(e){ console.error('hydrate error', e); setGameState('setup'); setUiStep('welcome'); }
-    }
-
-    async function persist(patch={}){
-      const data = {
-        contestants,accepted,hostDates,hostTimes,hostingOrder,
-        scores,comments,currentRound,gameStarted,gameState,
-        scoringMode,categories, ...patch
-      };
-      await storage.set(gameId, JSON.stringify(data));
-    }
-    const persistDebounced=(patch={})=>{
-      if(debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current=setTimeout(()=>persist(patch), 400);
-    };
-
-    const isOrganiser = myContestantId===0;
-
-    // Contestants CRUD
-    const addContestant=()=>{
-      if(!newContestantName.trim() || contestants.length>=6) return;
-      const up=[...contestants, newContestantName.trim()];
-      const acc={...accepted}; // organiser already true
-      setContestants(up); setAccepted(acc); setNewContestantName('');
-      persist({ contestants: up, accepted: acc });
-    };
-    const removeContestant=(i)=>{
-      if(i===0){ alert('Cannot remove the organiser'); return; }
-      if(!confirm('Remove this participant?')) return;
-      const updated=contestants.filter((_,idx)=>idx!==i);
-      const remap=(obj)=>{ const n={}; Object.entries(obj||{}).forEach(([k,v])=>{ const ik=+k; if(ik===i) return; const nk=ik>i?ik-1:ik; n[nk]=v; }); return n; };
-      const deep=(obj)=>{ const out={}; Object.entries(obj||{}).forEach(([h,inner])=>{ const hi=+h; if(hi===i) return; const nh=hi>i?hi-1:hi; out[nh]={}; Object.entries(inner||{}).forEach(([s,val])=>{ const si=+s; if(si===i) return; const ns=si>i?si-1:si; out[nh][ns]=val; }); }); return out; };
-      const a=remap(accepted), hd=remap(hostDates), ht=remap(hostTimes), sc=deep(scores), cm=deep(comments);
-      const order = prepareOrder(updated, hd);
-      setContestants(updated); setAccepted(a); setHostDates(hd); setHostTimes(ht); setScores(sc); setComments(cm); setHostingOrder(order);
-      persist({ contestants:updated, accepted:a, hostDates:hd, hostTimes:ht, scores:sc, comments:cm, hostingOrder:order });
-    };
-    const getLink=(i)=> `${location.href.split('?')[0]}?game=${gameId}&c=${i}`;
-    const copyLink=(i)=>{ navigator.clipboard.writeText(getLink(i)); setCopiedIndex(i); setTimeout(()=>setCopiedIndex(null),1500); };
-
-    // RSVP
-    const selectDateFor=(idx,iso,time)=>{
-      const chosen=new Date(iso); const today=new Date(); today.setHours(0,0,0,0); chosen.setHours(0,0,0,0);
-      if(isNaN(chosen.getTime())){ alert('Invalid date'); return; }
-      if(chosen<today){ alert('Date in the past'); return; }
-      const conflict = Object.entries(hostDates).find(([k,v])=> v===iso && +k!==idx);
-      if(conflict){ alert('That date is already chosen.'); return; }
-      const hd={...hostDates,[idx]:iso}; const ht={...hostTimes}; if(time) ht[idx]=time; else delete ht[idx];
-      setHostDates(hd); setHostTimes(ht); persistDebounced({ hostDates:hd, hostTimes:ht });
-    };
-    const acceptInvitation=(idx)=>{
-      if(!hostDates[idx]){ alert('Pick a date first'); return; }
-      const a={...accepted,[idx]:true}; setAccepted(a); setShowConfirmation(true); setTimeout(()=>setShowConfirmation(false),2000);
-      // Keep identity in URL (prevents "undefined" + start validation issues)
-      const params = new URLSearchParams(location.search);
-      params.set('game', gameId);
-      params.set('c', idx);
-      history.replaceState({}, '', `${location.pathname}?${params.toString()}`);
-      setMyContestantId(idx);
-      persist({ accepted:a });
-    };
-    const declineInvitation=(idx)=>{
-      if(!confirm('Decline and clear your date?')) return;
-      const hd={...hostDates}; delete hd[idx];
-      const a={...accepted}; delete a[idx];
-      setHostDates(hd); setAccepted(a); persist({ hostDates:hd, accepted:a });
-    };
-
-    // Order & start
-    const prepareOrder=(c=contestants, hd=hostDates)=>{
-      const list=c.map((_,i)=>({i,d:hd[i]||''})).sort((a,b)=> a.d===b.d? a.i-b.i : (!a.d?1:!b.d?-1:a.d.localeCompare(b.d)));
-      const order=list.map(x=>x.i); setHostingOrder(order); return order;
-    };
-    const canStart=()=>{
-      if(contestants.length<2) return false;
-      for(let i=0;i<contestants.length;i++){
-        if(!accepted[i] || !hostDates[i]) return false;
-      }
-      const dates=Object.values(hostDates); return new Set(dates).size===dates.length;
-    };
-    const startCompetition=()=>{
-      if(!canStart()){ alert('All participants must accept and choose unique dates.'); return; }
-      const enabled = (scoringMode==='categories') ? categories.filter(c=>c.enabled).slice(0,3) : [];
-      const order=prepareOrder();
-      const s={}, c={};
-      contestants.forEach((_,h)=>{ s[h]={}; c[h]={}; contestants.forEach((__,x)=>{ if(h!==x){ s[h][x] = scoringMode==='simple' ? null : { categories: Object.fromEntries(enabled.map(ec=>[ec.name,null])), overall:null }; c[h][x]=''; } }); });
-      setScores(s); setComments(c); setCurrentRound(0); setGameStarted(true); setGameState('active');
-      persist({ scores:s, comments:c, currentRound:0, gameStarted:true, gameState:'active', hostingOrder:order, categories:enabled.length?enabled:[] });
-    };
-
-    // Voting windows
-    const votingUnlockForHost=(h)=>{ const d=hostDates[h]; if(!d) return null; const t=hostTimes[h]; const sched=new Date(`${d}T${t?t:'00:00'}`); const ms=sched.getTime() + (t?6*3600e3:24*3600e3); return new Date(ms); };
-
-    // Greeting guard
-    const greetName = (myContestantId!=null && contestants[myContestantId]) ? `, ${contestants[myContestantId]}` : '';
-
-    /* ---------- Wizard (welcome/setup) ---------- */
-    if(gameState==='setup' && (uiStep==='welcome' || uiStep==='setup')){
+    // Small circular logo SVG
+    function Logo(){
+      const gold="#f59e0b";
       return (
-        <div className="container">
-          {uiStep==='welcome' ? (
-            <div className="card wizard-card">
-              <div className="welcome-wrap">
-                <Logo/>
-                <div className="title">🥳 Welcome to Culinary Quest!</div>
-                <p className="subtitle">The friendly dinner competition. Ready to begin?</p>
-                <div style={{display:'flex',gap:'12px',marginTop:'6px'}}>
-                  <button className="btn-success btn-lg" onClick={()=>setUiStep('setup')}>Let’s Get Started</button>
-                  <button className="btn-outline-red btn-lg" onClick={()=>{
-                    window.showToast('👋 Come back soon!','success',1500);
-                    setTimeout(()=>{ try{window.close();}catch(e){location.href=location.href.split('?')[0];} },1600);
-                  }}>Cancel</button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="card wizard-card">
-              <h2 className="title">🎯 Configure Your Quest</h2>
-              <p className="subtitle">Choose how your guests will score each dinner.</p>
-
-              <div className="option-grid">
-                <div className={`option-card ${scoringMode==='simple'?'selected':''}`} onClick={()=>{ setScoringMode('simple'); persist({scoringMode:'simple'}); }}>
-                  <div className="option-title">Option 1 — Simple Scoring</div>
-                  <div className="option-desc">Each guest gives one overall score (0–10).</div>
-                </div>
-                <div className={`option-card ${scoringMode==='categories'?'selected':''}`} onClick={()=>{ setScoringMode('categories'); persist({scoringMode:'categories'}); }}>
-                  <div className="option-title">Option 2 — Category Scoring</div>
-                  <div className="option-desc">Guests rate up to <strong>3</strong> categories; average becomes the overall.</div>
-                </div>
-              </div>
-
-              {scoringMode==='categories' && (
-                <div className="card" style={{marginTop:'12px'}}>
-                  <h3>Select up to 3 categories</h3>
-                  <div className="cat-grid">
-                    {categories.map(c=>(
-                      <label key={c.name} className="cat-chip">
-                        <input type="checkbox" checked={!!c.enabled} onChange={()=>{ const next=categories.map(x=>x.name===c.name?{...x,enabled:!x.enabled}:x); if(next.filter(x=>x.enabled).length>3){ window.showToast('Maximum 3 categories', 'error', 1500); return; } setCategories(next); persist({categories:next}); }} />
-                        <span>{c.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div style={{display:'flex',gap:'8px',marginTop:'10px',flexWrap:'wrap'}}>
-                    <input id="new-cat" placeholder="Add custom category (e.g. Ambience)" style={{flex:'1 1 220px'}} />
-                    <button className="btn-ghost" onClick={()=>{ const el=document.getElementById('new-cat'); if(!el) return; const v=(el.value||'').trim(); if(!v) return; if(categories.some(c=>c.name.toLowerCase()===v.toLowerCase())){ window.showToast('Category exists','error',1500); return; } const next=[...categories,{name:v,enabled:true}]; if(next.filter(c=>c.enabled).length>3){ window.showToast('Max 3 categories','error',1500); return; } setCategories(next); persist({categories:next}); el.value=''; }}>Add</button>
-                  </div>
-                  <div className="muted" style={{marginTop:'8px'}}>Enabled: {categories.filter(c=>c.enabled).length}/3</div>
-                </div>
-              )}
-
-              <div style={{display:'flex',gap:'12px',marginTop:'16px',justifyContent:'center'}}>
-                <button className="btn-success btn-lg" onClick={()=>{ setGameState('setup'); setUiStep('addGuests'); persist({gameState:'setup'}); window.showToast('Add your guests to begin','success',800); }}>Add Guests</button>
-                <button className="btn-outline-red btn-lg" onClick={()=>{ window.showToast('👋 Come back soon!','success',1500); setTimeout(()=>{ try{window.close();}catch(e){location.href=location.href.split('?')[0];} },1600); }}>Cancel</button>
-              </div>
-            </div>
-          )}
-        </div>
+        <svg className="logo" viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="38" fill="#fff" stroke="#e5e7eb" strokeWidth="3"/>
+          <circle cx="60" cy="60" r="28" fill="#f9fafb"/>
+          <g transform="translate(36,30) rotate(-35 24 30)">
+            <rect x="22" y="18" width="4" height="32" rx="2" fill={gold}/>
+            <rect x="21" y="12" width="2" height="8" rx="1" fill={gold}/>
+            <rect x="23" y="12" width="2" height="8" rx="1" fill={gold}/>
+            <rect x="25" y="12" width="2" height="8" rx="1" fill={gold}/>
+            <rect x="27" y="12" width="2" height="8" rx="1" fill={gold}/>
+          </g>
+          <g transform="translate(54,30) rotate(30 6 30)">
+            <rect x="5" y="16" width="4" height="36" rx="2" fill={gold}/>
+            <path d="M7 6 C12 12, 12 14, 7 18 C2 14, 2 12, 7 6 Z" fill={gold}/>
+          </g>
+        </svg>
       );
     }
 
-    /* ---------- Add Guests (light) ---------- */
-    if(gameState==='setup' && uiStep==='addGuests'){
-      return (
-        <div className="container">
-          <h1 className="title">🍽️ Culinary Quest</h1>
-          <p className="subtitle">Organiser: add your guests and share invite links</p>
+    // Local persistence (prototype)
+    const LS_KEY = 'cq_setup_v2';
+    const loadState = () => {
+      try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+    };
+    const saveState = (obj) => { try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch {} };
+    const clearState = () => { try { localStorage.removeItem(LS_KEY); } catch {} };
 
-          <div className="card">
-            <h2>Setup Your Competition</h2>
-            <div className="muted" style={{marginTop:4}}>
-              Scoring mode: <strong>{scoringMode==='simple'?'Simple (overall 0–10)':'Categories (avg of up to 3)'}</strong>
-              {scoringMode==='categories' && <> — {categories.filter(c=>c.enabled).slice(0,3).map(c=>c.name).join(', ') || 'no categories selected'}</>}
+    // Utilities
+    const makeGameId = () => 'culinaryquest_' + Math.random().toString(36).slice(2,9);
+    const baseUrl = () => location.href.split('?')[0];
+    const inviteLink = (gameId, idx) => `${baseUrl()}?game=${gameId}&c=${idx}`;
+
+    function App(){
+      // core wizard state
+      const [setupStep, setSetupStep] = useState(1);
+      const [gameId, setGameId] = useState(makeGameId());
+      const [scoringMode, setScoringMode] = useState('simple'); // 'simple' | 'categories'
+      // categories: Food compulsory (locked on). Others off by default.
+      const [categories, setCategories] = useState([
+        { name:'Food', enabled:true, locked:true },
+        { name:'Menu', enabled:false },
+        { name:'Table Setting', enabled:false },
+        { name:'Drinks', enabled:false },
+        { name:'Entertainment', enabled:false }
+      ]);
+      const [customCats, setCustomCats] = useState([]); // up to 2
+      const [newCustomCat, setNewCustomCat] = useState('');
+
+      // contestants: organiser first
+      const [contestants, setContestants] = useState(['Organiser']);
+      const [newGuest, setNewGuest] = useState('');
+      // RSVP status demo: 'Pending' | 'Accepted' | 'Declined'
+      const [rsvpStatus, setRsvpStatus] = useState({ 0: 'Accepted' }); // organiser treated as accepted for demo
+
+      // cancel modal
+      const [showCancel, setShowCancel] = useState(false);
+
+      // hydrate persisted
+      useEffect(()=>{
+        const s = loadState();
+        if(!s) return;
+        setSetupStep(s.setupStep ?? 1);
+        setGameId(s.gameId ?? makeGameId());
+        setScoringMode(s.scoringMode ?? 'simple');
+        setCategories(s.categories ?? categories);
+        setCustomCats(s.customCats ?? []);
+        setContestants(s.contestants ?? ['Organiser']);
+        setRsvpStatus(s.rsvpStatus ?? {0: 'Accepted'});
+      },[]);
+
+      // persist on change
+      useEffect(()=>{
+        saveState({ setupStep, gameId, scoringMode, categories, customCats, contestants, rsvpStatus });
+      }, [setupStep, gameId, scoringMode, categories, customCats, contestants, rsvpStatus]);
+
+      const enabledCount = categories.filter(c=>c.enabled).length + customCats.filter(c=>c.enabled).length; // includes Food
+      const customLeft = Math.max(0, 2 - customCats.length);
+
+      // handlers
+      const toggleCategory = (name) => {
+        setCategories(prev=>{
+          return prev.map(c=>{
+            if(c.name!==name) return c;
+            if(c.locked) return c;
+            const nextEnabled = !c.enabled;
+            const projected = enabledCount + (nextEnabled ? 1 : -1);
+            if(nextEnabled && projected>4){ showToast('Max 4 categories total (Food + up to 3 others)'); return c; }
+            return {...c, enabled: nextEnabled};
+          });
+        });
+      };
+      const addCustomCategory = () => {
+        const v = (newCustomCat||'').trim();
+        if(!v) return;
+        if(customCats.length>=2){ showToast('You can add up to 2 custom categories'); return; }
+        if(categories.some(c=>c.name.toLowerCase()===v.toLowerCase()) || customCats.some(c=>c.name.toLowerCase()===v.toLowerCase())){ showToast('Category already exists'); return; }
+        const projected = enabledCount + 1;
+        if(projected>4){ showToast('Max 4 categories total'); return; }
+        setCustomCats([...customCats, {name:v, enabled:true, custom:true}]);
+        setNewCustomCat('');
+      };
+      const toggleCustomCategory = (name) => {
+        setCustomCats(prev=>{
+          return prev.map(c=>{
+            if(c.name!==name) return c;
+            const nextEnabled = !c.enabled;
+            const projected = enabledCount + (nextEnabled ? 1 : -1);
+            if(nextEnabled && projected>4){ showToast('Max 4 categories total'); return c; }
+            return {...c, enabled: nextEnabled};
+          });
+        });
+      };
+      const removeCustomCategory = (name) => {
+        setCustomCats(prev=>prev.filter(c=>c.name!==name));
+      };
+
+      const addGuest = () => {
+        const v = (newGuest||'').trim();
+        if(!v) return;
+        if(contestants.length>=6){ showToast('Limit 6 participants for this prototype'); return; }
+        setContestants(prev=>[...prev, v]);
+        setNewGuest('');
+        setRsvpStatus(prev=>({ ...prev, [contestants.length]: 'Pending' })); // new index
+        showToast(window.COPY.organiser.guest_added);
+      };
+      const removeGuest = (idx) => {
+        if(idx===0){ showToast('Cannot remove the organiser'); return; }
+        const nextContestants = contestants.filter((_,i)=>i!==idx);
+        // reindex RSVP map
+        const nextStatus = {};
+        nextContestants.forEach((_,i)=>{ nextStatus[i] = (i===0?'Accepted': 'Pending'); });
+        setContestants(nextContestants);
+        setRsvpStatus(nextStatus);
+      };
+
+      const copyLink = async (idx) => {
+        try {
+          await navigator.clipboard.writeText(inviteLink(gameId, idx));
+          showToast(window.COPY.organiser.link_copied);
+        } catch {
+          showToast('Copy failed — long-press to copy', 1800);
+        }
+      };
+
+      const allResponded = () => {
+        const total = contestants.length;
+        for(let i=0;i<total;i++){
+          if(rsvpStatus[i]!=='Accepted' && rsvpStatus[i]!=='Declined') return false;
+        }
+        return total>1; // at least organiser + 1 guest
+      };
+
+      const confirmCancel = () => setShowCancel(true);
+      const doCancel = () => {
+        clearState();
+        showToast('👋 Come back soon!');
+        setTimeout(()=>{ location.href = baseUrl(); }, 900);
+      };
+
+      const CategoryRow = ({cat, locked, onToggle, onRemove}) => (
+        <label className="cat-chip" style={{opacity: locked? .8 : 1}}>
+          <input type="checkbox" disabled={locked} checked={!!cat.enabled} onChange={()=>onToggle(cat.name)} />
+          <span style={{flex:1}}>{cat.name}{locked && <span className="lock"> (compulsory)</span>}</span>
+          {onRemove && !locked && <button type="button" className="btn-ghost" onClick={onRemove}>Remove</button>}
+        </label>
+      );
+
+      // --------- SCREENS ---------
+      const Screen1 = () => (
+        <div className="card fade">
+          <Logo/>
+          <h1 className="title">🎩 Step right up, Master of Ceremonies — the stage is yours!</h1>
+          <p className="subtitle">As the Organiser, you’re hosting the grandest dining spectacle your friends have ever seen.</p>
+          <div className="card" style="padding:12px">
+            <p>Here’s how to roll out the red tablecloth:</p>
+            <ol style="margin:8px 0 0 18px; line-height:1.55">
+              <li>🎯 Choose your scoring style — single score or category-by-category showdown.</li>
+              <li>👥 Add your contestants and send their personalised invite links.</li>
+              <li>📅 Wait for RSVPs as each player locks in a unique hosting date.</li>
+            </ol>
+            <p style="margin-top:10px">Once the line-up is complete, review the schedule and hit <strong>Start Competition</strong> to launch your Quest. You’ll oversee every round, keep the scores honest, and unveil the final results — crowning the ultimate Culinary Conquistador!</p>
+            <p style="margin-top:10px">💡 Optional twist: Add a little suspense (and motivation) by inviting each player to contribute equally towards a grand prize for the champion. What the prize is — that’s your secret ingredient!</p>
+            <p style="margin-top:10px">Now cue the theme music, pour the first glass, and prepare for the most entertaining dinner series of your life. Your Culinary Quest begins now!</p>
+          </div>
+          <div className="actions">
+            <button className="btn btn-success btn-lg" onClick={()=>setSetupStep(2)}>Continue</button>
+            <button className="btn btn-danger btn-lg" onClick={confirmCancel}>Cancel</button>
+          </div>
+        </div>
+      );
+
+      const Screen2 = () => (
+        <div className="card fade">
+          <Logo/>
+          <h2 className="title">⚖️ Choose Your Scoring Style</h2>
+          <p className="subtitle">Food is compulsory. You can add up to <strong>3</strong> more categories (including up to <strong>2</strong> custom).</p>
+
+          <div className="grid-2">
+            <div className={"option " + (scoringMode==='simple'?'selected':'')} onClick={()=>setScoringMode('simple')}>
+              <div className="option-title">Option 1 — Simple Scoring</div>
+              <div className="option-desc">Each guest gives one overall score (0–10).</div>
             </div>
-
-            <div style={{display:'flex',gap:8,marginTop:12}}>
-              <input value={newContestantName} onChange={e=>setNewContestantName(e.target.value)} placeholder="Guest name" />
-              <button onClick={addContestant} className="btn-secondary" disabled={!newContestantName.trim() || contestants.length>=6}>+ Add</button>
-            </div>
-
-            <div className="list" style={{marginTop:12}}>
-              {contestants.map((n,i)=>(
-                <div key={i} className="list-item">
-                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                    <div style={{fontWeight:600}}>{i+1}. {n}</div>
-                    {i===0 && <div className="badge">Organiser</div>}
-                  </div>
-                  <div style={{display:'flex',gap:8}}>
-                    <button onClick={()=>removeContestant(i)} className="btn-ghost">{i===0?'Cannot remove':'Remove'}</button>
-                    <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
-                  </div>
-                </div>
-              ))}
-              {!contestants.length && <div style={{textAlign:'center',padding:'1rem',color:'#9ca3af'}}>No participants yet — add guests.</div>}
-            </div>
-
-            <div style={{marginTop:12}}>
-              <button onClick={()=>{ setShowLinks(true); persist({}); }} className="btn-success" disabled={contestants.length<2}>Share Links & RSVP</button>
-              <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>setUiStep('setup')}>Change Scoring Options</button>
-              <button className="btn-outline-red" style={{marginLeft:8}} onClick={()=>{ window.showToast('👋 Come back soon!','success',1500); setTimeout(()=>{ try{window.close();}catch(e){location.href=location.href.split('?')[0];} },1600); }}>Cancel</button>
-              <div style={{marginTop:8}} className="muted">Organiser is participant #1. Minimum 2 participants required.</div>
+            <div className={"option " + (scoringMode==='categories'?'selected':'')} onClick={()=>setScoringMode('categories')}>
+              <div className="option-title">Option 2 — Category Scoring</div>
+              <div className="option-desc">Up to 4 total categories. <strong>Food</strong> is compulsory.</div>
             </div>
           </div>
 
-          {showLinks && (
-            <div className="card">
-              <h3>Invite Links</h3>
-              <p className="muted">Send each player their unique link. Everyone chooses a unique hosting date and accepts.</p>
-              <div className="list" style={{marginTop:12}}>
-                {contestants.map((n,i)=>(
-                  <div key={i} className="list-item">
-                    <div>
-                      <div style={{fontWeight:600}}>{n} {i===0 && <span style={{fontSize:'.8rem',color:'#fff',background:'#3b82f6',padding:'0.15rem .4rem',borderRadius:6,marginLeft:8}}>YOU</span>}</div>
-                      <div className="muted" style={{fontSize:'.85rem'}}>
-                        {accepted[i] ? `Accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : (hostDates[i] ? `Selected — ${formatDateReadable(hostDates[i], hostTimes[i])} (not accepted)` : 'Pending')}
-                      </div>
-                    </div>
-                    <div style={{display:'flex',gap:8}}>
-                      <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
-                    </div>
-                  </div>
+          {scoringMode==='categories' && (
+            <div className="card" style={{marginTop:10}}>
+              <h3 style={{marginBottom:6}}>Select categories</h3>
+              <div className="cat-grid">
+                {categories.map(cat=>(
+                  <CategoryRow key={cat.name}
+                    cat={cat}
+                    locked={!!cat.locked}
+                    onToggle={(name)=>toggleCategory(name)}
+                  />
+                ))}
+                {customCats.map(cat=>(
+                  <CategoryRow key={cat.name}
+                    cat={cat}
+                    locked={false}
+                    onToggle={(name)=>toggleCustomCategory(name)}
+                    onRemove={()=>removeCustomCategory(cat.name)}
+                  />
                 ))}
               </div>
-              <div style={{marginTop:12}}>
-                <button className="btn-success" onClick={()=>{ setGameState('active'); persist({gameState:'active'}); window.showToast('RSVPs open — waiting for guests', 'success', 1200); }}>Done — Wait for RSVPs</button>
+
+              <div className="row" style={{marginTop:10}}>
+                <input placeholder={customLeft?`Add custom category (${customLeft} left)`:'Custom category limit reached'} value={newCustomCat} onChange={e=>setNewCustomCat(e.target.value)} disabled={!customLeft}/>
+                <button className="btn btn-ghost" onClick={addCustomCategory} disabled={!customLeft || !newCustomCat.trim()}>Add</button>
               </div>
+              <div className="muted" style={{marginTop:6}}>Enabled: <strong>{enabledCount}</strong> / 4 total (Food + up to 3 more)</div>
             </div>
           )}
+
+          <div className="actions">
+            <button className="btn btn-success btn-lg" onClick={()=>setSetupStep(3)}>Continue to add guests</button>
+            <button className="btn btn-danger btn-lg" onClick={confirmCancel}>Cancel</button>
+          </div>
         </div>
       );
-    }
 
-    /* ---------- ACTIVE ---------- */
-    if(gameState==='active'){
-      const welcomeTitle = `Welcome${greetName}!`;
+      const Screen3 = () => (
+        <div className="card fade">
+          <Logo/>
+          <h2 className="title">👥 Add Your Contestants</h2>
+          <p className="subtitle">Organiser is listed first. Add your players by name.</p>
 
-      if(!gameStarted){
-        // Guest RSVP view
-        if(myContestantId!=null && !accepted[myContestantId]){
-          const disabledForMe=new Set(Object.entries(hostDates).filter(([k,v])=> +k!==myContestantId && v).map(([_,v])=>v));
-          const today=new Date(); today.setHours(0,0,0,0);
-          const myTime = hostTimes[myContestantId] || '';
-          return (
-            <div className="container">
-              <h1 className="title">🍽️ Invitation</h1>
-              <div className="card">
-                <h2>{welcomeTitle}</h2>
-                <p className="muted">Choose the date you would like to host. Time optional. One host per day.</p>
-                <Calendar selectedDate={hostDates[myContestantId]} onSelect={(iso)=>selectDateFor(myContestantId, iso, myTime)} disabledDates={disabledForMe} minDate={today}/>
-                <div style={{marginTop:12}}>
-                  <label className="muted" style={{display:'block',marginBottom:6}}>Optional time</label>
-                  <input type="time" value={myTime} onChange={(e)=>{ const t=e.target.value||undefined; const ht={...hostTimes}; if(t) ht[myContestantId]=t; else delete ht[myContestantId]; setHostTimes(ht); persistDebounced({hostTimes:ht}); }}/>
-                </div>
-                <div style={{marginTop:12,display:'flex',gap:8}}>
-                  <button className="btn-secondary" onClick={()=>acceptInvitation(myContestantId)} disabled={!hostDates[myContestantId]}>✅ Accept Invitation</button>
-                  <button className="btn-ghost" onClick={()=>{ const hd={...hostDates}; delete hd[myContestantId]; setHostDates(hd); persist({hostDates:hd}); }}>Clear</button>
-                  <button className="btn-ghost" onClick={()=>declineInvitation(myContestantId)}>Decline</button>
-                </div>
-                {hostDates[myContestantId] && <div className="card" style={{background:'#fff8db',marginTop:12}}>Your chosen date: <strong>{formatDateReadable(hostDates[myContestantId], myTime)}</strong></div>}
-                {showConfirmation && <div style={{marginTop:12,background:'#d1fae5',padding:'1rem',borderRadius:8,border:'2px solid #10b981'}}>✅ Invitation accepted! Waiting for organiser…</div>}
-              </div>
-            </div>
-          );
-        }
-
-        // Organiser pre-start
-        const acceptedCount=Object.values(accepted).filter(Boolean).length;
-        return (
-          <div className="container">
-            <h1 className="title">🍽️ Culinary Quest</h1>
-            <p className="subtitle">Welcome{greetName}!</p>
-
-            <div className="card">
-              <h2>RSVP & Schedule</h2>
-              {isOrganiser ? (
-                <div>
-                  <p className="muted">Start when everyone has accepted and dates are unique.</p>
-                  <div style={{marginTop:12}}>
-                    {contestants.map((n,i)=>(
-                      <div key={i} className="list-item">
-                        <div>
-                          <div style={{fontWeight:600}}>{n} {i===0 && <span className="badge">Organiser</span>}</div>
-                          <div className="muted" style={{fontSize:'.9rem'}}>
-                            {accepted[i] ? `Accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : (hostDates[i] ? `Selected — ${formatDateReadable(hostDates[i], hostTimes[i])} (not accepted)` : 'No date chosen')}
-                          </div>
-                        </div>
-                        <div style={{display:'flex',gap:8}}>
-                          <button className="btn-ghost" onClick={()=>{ if(!confirm('Clear date for this participant?')) return; const hd={...hostDates}; delete hd[i]; setHostDates(hd); persist({hostDates:hd}); }}>Clear</button>
-                          <button className="btn-ghost" onClick={()=>copyLink(i)}>{copiedIndex===i?'✓ Copied':'Copy link'}</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{marginTop:12}}>
-                    <button className="btn-success" onClick={()=>{
-                      if(!canStart()){ alert('All participants must accept and choose unique dates before starting.'); return; }
-                      const order=prepareOrder();
-                      const list=order.map((i,idx)=>({num:idx+1,name:contestants[i],date:formatDateReadable(hostDates[i],hostTimes[i])}));
-                      setScheduleText(list); setShowStartModal(true);
-                    }}>Start Competition</button>
-
-                    <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>setUiStep('setup')}>Change Scoring Options</button>
-                    <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>setShowTerminateModal(true)}>Terminate Game</button>
-                  </div>
-
-                  {showStartModal && (
-                    <div className="modal-overlay">
-                      <div className="modal" role="dialog" aria-modal="true">
-                        <h3>Start competition</h3>
-                        <p className="muted">Review the schedule:</p>
-                        <ul style={{marginTop:'.5rem'}}>{scheduleText.map(s=><li key={s.num}><strong>{s.num}.</strong> {s.name} — {s.date}</li>)}</ul>
-                        <div className="modal-actions" style={{marginTop:'10px',display:'flex',gap:8,justifyContent:'flex-end'}}>
-                          <button className="btn-ghost" onClick={()=>setShowStartModal(false)}>Cancel</button>
-                          <button className="btn-success" onClick={()=>{ setShowStartModal(false); startCompetition(); }}>Confirm</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {showTerminateModal && (
-                    <div className="modal-overlay">
-                      <div className="modal" role="dialog" aria-modal="true">
-                        <h3>Terminate Competition</h3>
-                        <p className="muted">Are you sure? You can later share or delete results.</p>
-                        <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:10}}>
-                          <button className="btn-ghost" onClick={()=>setShowTerminateModal(false)}>Cancel</button>
-                          <button className="btn-primary" onClick={async ()=>{ setShowTerminateModal(false); setGameState('terminated'); await persist({gameState:'terminated'}); window.showToast('Competition terminated', 'success', 1200); }}>Terminate</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <div className="list-item">
-                    <div>
-                      <div style={{fontWeight:600}}>Your RSVP</div>
-                      <div className="muted">{accepted[myContestantId] ? `Accepted — ${formatDateReadable(hostDates[myContestantId], hostTimes[myContestantId])}` : 'Not accepted yet'}</div>
-                    </div>
-                  </div>
-                  <div className="wait-box">
-                    <div style={{fontWeight:700}}>Please wait for the organiser to start the competition</div>
-                    <div className="muted" style={{marginTop:6}}>You’ll be able to score when voting opens.</div>
-                  </div>
-                  <div style={{marginTop:12}} className="muted">Group progress: {Object.values(accepted).filter(Boolean).length}/{contestants.length} accepted</div>
-                </div>
-              )}
-            </div>
+          <div className="row" style={{marginTop:6}}>
+            <input placeholder="Guest name" value={newGuest} onChange={e=>setNewGuest(e.target.value)}/>
+            <button className="btn btn-ghost" onClick={addGuest} disabled={!newGuest.trim()}>+ Add</button>
           </div>
-        );
-      }
 
-      // Started (dark theme via effect)
-      const hostIdx = (hostingOrder && hostingOrder.length) ? hostingOrder[currentRound] : currentRound;
-      const hostName = contestants[hostIdx] ?? '';
-      const currentScores = scores[hostIdx] || {};
-      const scoredCount = Object.values(currentScores).filter(s=>{
-        if(s==null) return false; return (typeof s==='number') || (s && typeof s==='object' && typeof s.overall==='number');
-      }).length;
-      const iHaveScored = (myContestantId!=null && myContestantId!==hostIdx && scores[hostIdx]?.[myContestantId]!=null);
-      const votingUnlockForHost=(h)=>{ const d=hostDates[h]; if(!d) return null; const t=hostTimes[h]; const sched=new Date(`${d}T${t?t:'00:00'}`); const ms=sched.getTime() + (t?6*3600e3:24*3600e3); return new Date(ms); };
-      const isVotingOpen=()=>{ const u=votingUnlockForHost(hostIdx); return !u || new Date()>=u; };
-      const unlockDate=votingUnlockForHost(hostIdx);
+          <div className="list" style={{marginTop:10}}>
+            {contestants.map((n,i)=>(
+              <div key={i} className="list-item">
+                <div><strong>{i+1}. {n}</strong>{i===0 && <span className="badge">Organiser</span>}</div>
+                <div>
+                  <button className="btn btn-ghost" onClick={()=>removeGuest(i)} disabled={i===0}>{i===0?'—':'Remove'}</button>
+                </div>
+              </div>
+            ))}
+            {contestants.length===1 && (
+              <div className="muted" style={{textAlign:'center',padding:'8px'}}>Add at least one guest to continue.</div>
+            )}
+          </div>
 
-      const submitScore=()=>{
-        if(myContestantId===hostIdx){ alert("Hosts can't score themselves."); return; }
-        if(scoringMode==='simple'){
-          const v=parseInt(tempScore,10); if(Number.isNaN(v)||v<0||v>10){ alert('Score 0–10'); return; }
-          const s={...scores}; s[hostIdx]={...(s[hostIdx]||{}), [myContestantId]:v}; setScores(s); persist({scores:s}); setTempScore(''); setTempComment('');
-        }else{
-          const enabled = categories.filter(c=>c.enabled).slice(0,3).map(c=>c.name);
-          for(const cat of enabled){ const v=parseFloat(tempCategoryScores[cat]); if(Number.isNaN(v)||v<0||v>10){ alert(`Score 0–10 for ${cat}`); return; } }
-          const nums = enabled.map(cat=>parseFloat(tempCategoryScores[cat])); const overall = Math.round(avg(nums)*10)/10;
-          const s={...scores}; const c={...comments};
-          s[hostIdx]={...(s[hostIdx]||{}), [myContestantId]:{ categories:Object.fromEntries(enabled.map(cat=>[cat, parseFloat(tempCategoryScores[cat]) ])), overall }};
-          c[hostIdx]={...(c[hostIdx]||{}), [myContestantId]:tempComment};
-          setScores(s); setComments(c); persist({scores:s, comments:c}); setTempCategoryScores({}); setTempComment('');
-        }
-      };
-      const hasAllScored=(h)=>{
-        const vals=Object.values(scores[h]||{}); if(!vals.length) return false;
-        return vals.every(v=> (typeof v==='number') || (v && typeof v==='object' && v.overall!=null));
-      };
-      const totals = (()=>{ const max=(contestants.length-1)*10; const arr=contestants.map((n,idx)=>{ let total=0; Object.values(scores[idx]||{}).forEach(sc=>{ if(sc==null) return; if(scoringMode==='simple'){ if(typeof sc==='number') total+=sc; } else { if(sc && typeof sc==='object' && typeof sc.overall==='number') total+=sc.overall; } }); return {name:n,total,maxScore:max,index:idx}; }); arr.sort((a,b)=>b.total-a.total); return arr; })();
+          <div className="actions">
+            <button className="btn btn-success btn-lg" onClick={()=>{ if(contestants.length<2){ showToast('Add at least one guest'); return; } setSetupStep(4); }}>Create guest access links</button>
+            <button className="btn btn-danger btn-lg" onClick={confirmCancel}>Cancel</button>
+          </div>
+        </div>
+      );
+
+      const Screen4 = () => (
+        <div className="card fade">
+          <Logo/>
+          <h2 className="title">🔗 Invitation Links</h2>
+          <p className="subtitle">Copy each link and send to the corresponding player.</p>
+
+          <div className="list" style={{marginTop:10}}>
+            {contestants.map((n,i)=>(
+              <div key={i} className="list-item" style={{alignItems:'flex-start'}}>
+                <div style={{flex:1}}>
+                  <div><strong>{n}</strong>{i===0 && <span className="badge">Organiser</span>}</div>
+                  <div className="copy" style={{marginTop:6}}>{inviteLink(gameId, i)}</div>
+                </div>
+                <button className="btn btn-ghost" onClick={()=>copyLink(i)}>{'Copy link'}</button>
+              </div>
+            ))}
+          </div>
+
+          <div className="actions">
+            <button className="btn btn-success btn-lg" onClick={()=>setSetupStep(5)}>Completed sending links</button>
+            <button className="btn btn-danger btn-lg" onClick={confirmCancel}>Cancel</button>
+          </div>
+        </div>
+      );
+
+      const setStatus = (idx, status) => setRsvpStatus(prev=>({ ...prev, [idx]: status }));
+      const Screen5 = () => (
+        <div className="card fade">
+          <Logo/>
+          <h2 className="title">📅 RSVP Tracker</h2>
+          <p className="subtitle">Track who has accepted, declined, or not yet responded.</p>
+
+          <div className="list" style={{marginTop:10}}>
+            {contestants.map((n,i)=>(
+              <div key={i} className="list-item" style={{alignItems:'center',gap:10}}>
+                <div style={{flex:1}}>
+                  <div><strong>{n}</strong>{i===0 && <span className="badge">Organiser</span>}</div>
+                  <div className="muted" style={{marginTop:4}}>Status: <strong>{rsvpStatus[i]||'Pending'}</strong></div>
+                </div>
+                {/* Demo controls — organiser can simulate responses in prototype */}
+                {i!==0 && (
+                  <div className="row">
+                    <button className="btn btn-ghost" onClick={()=>setStatus(i,'Accepted')}>Mark Accepted</button>
+                    <button className="btn btn-ghost" onClick={()=>setStatus(i,'Declined')}>Mark Declined</button>
+                    <button className="btn btn-ghost" onClick={()=>setStatus(i,'Pending')}>Reset</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="actions">
+            <button className="btn btn-success btn-lg" disabled={!allResponded()} onClick={()=>{
+              showToast('🎬 Game setup complete — your Quest is ready to begin!', 1800);
+            }}>Let the Games Begin</button>
+            <button className="btn btn-danger btn-lg" onClick={confirmCancel}>Cancel</button>
+          </div>
+          {!allResponded() && <p className="muted" style={{textAlign:'center',marginTop:8}}>“Let the Games Begin” will unlock once everyone has responded.</p>}
+        </div>
+      );
 
       return (
         <div className="container">
-          <h1 className="title-invert">🍽️ Culinary Quest</h1>
-          <p className="subtitle-invert">Welcome{greetName}!</p>
+          {setupStep===1 && <Screen1/>}
+          {setupStep===2 && <Screen2/>}
+          {setupStep===3 && <Screen3/>}
+          {setupStep===4 && <Screen4/>}
+          {setupStep===5 && <Screen5/>}
 
-          <div className="card">
-            <h2>Round {currentRound+1} of {contestants.length}</h2>
-            <div style={{marginTop:8,marginBottom:12}} className="space-between">
-              <div>
-                <div style={{fontSize:'.95rem',color:'#6b7280'}}>Tonight's Host</div>
-                <div style={{fontWeight:700,fontSize:'1.25rem'}}>{hostName}</div>
-                <div className="muted" style={{fontSize:'.9rem',marginTop:4}}>{hostDates[hostIdx] ? `Host's date: ${formatDateReadable(hostDates[hostIdx], hostTimes[hostIdx])}` : 'Pending'}</div>
-              </div>
-              <div style={{width:'40%'}}>
-                <div style={{fontSize:'.85rem',color:'#6b7280'}}>Progress</div>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <div style={{flex:1}}><div className="progress-bar"><div className="progress-fill" style={{width:`${(Math.max(0,contestants.length-1)?(scoredCount/Math.max(0,contestants.length-1)):0)*100}%`}}></div></div></div>
-                  <div style={{fontWeight:700,color:'#ea580c'}}>{scoredCount}/{Math.max(0, contestants.length-1)}</div>
-                </div>
-              </div>
-            </div>
-
-            {!isVotingOpen() ? (
-              <div className="card" style={{background:'#dbeafe',marginBottom:12}}>
-                <h3 style={{marginTop:0}}>⏳ Voting not open yet</h3>
-                <p className="muted">Opens {unlockDate ? unlockDate.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'soon'}.</p>
-              </div>
-            ) : (
-              <>
-                { myContestantId!=null && myContestantId!==hostIdx && !iHaveScored && (
-                  scoringMode==='simple' ? (
-                    <div className="card" style={{background:'#fef3c7',marginBottom:12}}>
-                      <h3>Score {hostName}</h3>
-                      <div style={{marginTop:8}}><label className="muted">Your score (0–10)</label><input inputMode="numeric" type="number" min="0" max="10" value={tempScore} onChange={e=>setTempScore(e.target.value)} /></div>
-                      <div style={{marginTop:8}}><label className="muted">Comment (optional)</label><textarea rows="3" value={tempComment} onChange={e=>setTempComment(e.target.value)} /></div>
-                      <div style={{marginTop:8}}><button className="btn-secondary" onClick={submitScore} disabled={tempScore==='' || Number.isNaN(parseInt(tempScore,10))}>Submit Score</button></div>
-                    </div>
-                  ) : (
-                    <div className="card" style={{background:'#fef3c7',marginBottom:12}}>
-                      <h3>Category scoring — {hostName}</h3>
-                      <div className="muted" style={{marginTop:6}}>0–10 for each category. Overall = average (1 dp).</div>
-                      <div style={{marginTop:8}}>
-                        {categories.filter(c=>c.enabled).slice(0,3).map(c=>(
-                          <div key={c.name} style={{marginTop:8}}>
-                            <label className="muted">{c.name}</label>
-                            <input inputMode="numeric" type="number" min="0" max="10" value={tempCategoryScores[c.name]??''} onChange={e=>setTempCategoryScores(p=>({...p,[c.name]:e.target.value}))}/>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{marginTop:8}}><label className="muted">Comment (optional)</label><textarea rows="3" value={tempComment} onChange={e=>setTempComment(e.target.value)} /></div>
-                      <div style={{marginTop:8}} className="muted">Overall (preview): <strong>{(()=>{ const en=categories.filter(c=>c.enabled).slice(0,3).map(c=>c.name); if(!en.length) return '—'; const ns=en.map(cat=>parseFloat(tempCategoryScores[cat])).filter(n=>!Number.isNaN(n)); if(ns.length!==en.length) return '—'; return (Math.round(avg(ns)*10)/10).toFixed(1); })()}</strong></div>
-                      <div style={{marginTop:8}}><button className="btn-secondary" onClick={submitScore}>Submit Category Scores</button></div>
-                    </div>
-                  )
-                )}
-              </>
-            )}
-
-            { myContestantId===hostIdx && <div className="card" style={{background:'#fef3c7'}}>🍽️ You're tonight's host — you don't score yourself.</div> }
-
-            { isOrganiser ? (
-              <div style={{marginTop:12}}>
-                <h4>Scoring Status (Organiser)</h4>
-                {contestants.map((n,i)=> i===hostIdx? null :
-                  <div key={i} className="list-item">{n}<div>{ (typeof currentScores[i]==='number') || (currentScores[i]?.overall!=null) ? '✅ Scored':'⏳ Pending'}</div></div>
-                )}
-                <div style={{marginTop:12}}>
-                  { (hasAllScored(hostIdx)) ? (
-                    currentRound < contestants.length-1
-                      ? <button className="btn-success" onClick={()=>{ const nr=currentRound+1; setCurrentRound(nr); persist({currentRound:nr}); }}>Next Dinner Party →</button>
-                      : <button className="btn-primary" onClick={async ()=>{ setGameState('results'); await persist({gameState:'results'}); }}>🏆 View Final Results</button>
-                  ) : <div className="muted">Wait for all scores before progressing.</div> }
-                </div>
-                <div style={{marginTop:8}}><button className="btn-ghost" onClick={()=>setShowTerminateModal(true)}>Terminate Game</button></div>
-              </div>
-            ) : (
-              <div style={{marginTop:12}}>
-                <h4>Scoring Status</h4>
-                <div className="list-item"><div>Group progress</div><div className="muted">{scoredCount}/{Math.max(0, contestants.length-1)} submitted</div></div>
-              </div>
-            )}
-          </div>
-
-          {showTerminateModal && (
-            <div className="modal-overlay">
-              <div className="modal" role="dialog" aria-modal="true">
-                <h3>Terminate Competition</h3>
-                <p className="muted">Are you sure? You can then choose to share or delete results.</p>
-                <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:10}}>
-                  <button className="btn-ghost" onClick={()=>setShowTerminateModal(false)}>Cancel</button>
-                  <button className="btn-primary" onClick={async ()=>{ setShowTerminateModal(false); setGameState('terminated'); await persist({gameState:'terminated'}); window.showToast('Competition terminated', 'success', 1200); }}>Terminate</button>
+          {showCancel && (
+            <div className="overlay" role="dialog" aria-modal="true">
+              <div className="modal">
+                <h3>Cancel setup?</h3>
+                <p className="muted">Are you sure you want to cancel? All progress will be lost.</p>
+                <div className="modal-actions">
+                  <button className="btn btn-ghost" onClick={()=>setShowCancel(false)}>Keep editing</button>
+                  <button className="btn btn-danger" onClick={doCancel}>Yes, cancel</button>
                 </div>
               </div>
             </div>
@@ -790,54 +485,7 @@
       );
     }
 
-    /* ---------- TERMINATED / RESULTS ---------- */
-    if(gameState==='terminated' || gameState==='results'){
-      const totals = (()=>{ const max=(contestants.length-1)*10; const arr=contestants.map((n,idx)=>{ let total=0; Object.values(scores[idx]||{}).forEach(sc=>{ if(sc==null) return; if(typeof sc==='number') total+=sc; else if(sc?.overall!=null) total+=sc.overall; }); return {name:n,total,maxScore:max,index:idx}; }); arr.sort((a,b)=>b.total-a.total); return arr; })();
-      const top=totals[0]?.total??0, winners=totals.filter(r=>r.total===top), tie=winners.length>1;
-      const shareable = (gameState==='results');
-      const myId = myContestantId;
-      return (
-        <div className="container">
-          <h1 className="title-invert">{shareable?'🏆 Final Results':'🏁 Competition Terminated (Private)'}</h1>
-          <div className="card">
-            <div style={{background:'#fef3c7',border:'4px solid #f59e0b',padding:16,borderRadius:12,textAlign:'center'}}>
-              {tie ? (<><h2>🤝 It’s a Tie!</h2><div style={{marginTop:8}}>{winners.map((w,i)=><div key={i} style={{fontWeight:700}}>{w.name}</div>)}</div><p style={{marginTop:8}}>Top score: {top}/{winners[0]?.maxScore}</p></>) : (<><h2>🎉 Winner 🎉</h2><div style={{fontWeight:700,fontSize:'1.25rem'}}>{winners[0]?.name||'—'}</div><p style={{marginTop:8}}>Score: {top}/{winners[0]?.maxScore}</p></>)}
-            </div>
-
-            <h3 style={{marginTop:12}}>{shareable?'Final Leaderboard':'Leaderboard'}</h3>
-            <div style={{marginTop:8}}>
-              {totals.map((r,i)=>(<div key={i} className="list-item"><div><strong>#{i+1}</strong> <span style={{marginLeft:8}}>{r.name}</span></div><div style={{fontWeight:700,color:'#ea580c'}}>{r.total}</div></div>))}
-            </div>
-
-            <div style={{marginTop:12}}>
-              {myId===0 ? (
-                gameState==='terminated'
-                  ? (<div style={{display:'flex',gap:8}}><button className="btn-success" onClick={async ()=>{ await persist({gameState:'results'}); setGameState('results'); window.showToast('Results shared', 'success', 1000); }}>Share Results</button><button className="btn-ghost" onClick={async ()=>{ if(!confirm('Delete permanently?')) return; await storage.delete(gameId); location.href=location.href.split('?')[0]; }}>Delete Permanently</button></div>)
-                  : (<button className="btn-primary" onClick={async ()=>{ if(!confirm('Start a new competition?')) return; await storage.delete(gameId); location.href=location.href.split('?')[0]; }}>Start New Competition</button>)
-              ) : (
-                <div style={{textAlign:'center',padding:10,background:'#f3f4f6',borderRadius:8}}><p className="muted">{shareable?'Results are shared publicly.':'The organiser has not shared results yet.'}</p></div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Fallback
-    return (
-      <div className="container">
-        <div className="card" style={{textAlign:'center'}}>
-          <h2>Loading Culinary Quest…</h2>
-          <p className="muted" style={{marginTop:'1rem'}}>If this persists, refresh the page.</p>
-        </div>
-      </div>
-    );
-  }
-
-  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
   </script>
-
-  <script>window.addEventListener('error',(e)=>console.error('Window error:', e.error||e.message));</script>
 </body>
 </html>
-
