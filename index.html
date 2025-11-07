@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Onboarding + Light RSVP</title>
+  <title>Culinary Quest — Onboarding + Light RSVP + Fixed Categories</title>
 
-  <!-- React & Babel (dev for GH Pages) -->
+  <!-- React & Babel (for quick GH Pages/dev usage) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -31,7 +31,7 @@
     .title-invert { color:#fff; }
     .subtitle-invert { color:#fff; opacity:.95; }
 
-    input, textarea { padding:.5rem; border-radius:8px; border:1px solid #e5e7eb; width:100%; font-size:16px; }
+    input, textarea { padding:.5rem; border-radius:8px; border:1px solid #e5e7eb; width:100%; font-size:16px; } /* 16px avoids iOS zoom */
     textarea { min-height:64px; resize:vertical; }
 
     button { cursor:pointer; border:none; border-radius:999px; padding:.8rem 1.2rem; font-weight:700; }
@@ -78,11 +78,30 @@
     .option-title { font-weight:800; margin-bottom:.25rem; }
     .option-desc { color:#6b7280; font-size:.95rem; }
 
-    /* Categories */
-    .cat-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid #e5e7eb; border-radius:999px; padding:.35rem .6rem; margin:.25rem; background:#fff; }
-    .cat-row { margin-top:.5rem; }
+    /* Categories (mobile-safe) */
+    .cat-grid {
+      display: grid;
+      grid-template-columns: 1fr;  /* phones: 1 column */
+      gap: 8px;
+      margin-top: .5rem;
+    }
+    @media (min-width: 600px) {
+      .cat-grid { grid-template-columns: 1fr 1fr; } /* tablets+: 2 columns */
+    }
+    .cat-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: .6rem .8rem;
+      background: #fff;
+      width: 100%;
+    }
+    .cat-chip input { width: 20px; height: 20px; margin: 0; }
+    .cat-chip span { flex: 1 1 auto; line-height: 1.2; }
 
-    /* Modals (slower for iOS) */
+    /* Modals */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; opacity:0; animation: modalOverlayIn 0.4s ease-out forwards; }
     .modal { background:#fff; padding:1.5rem; border-radius:12px; max-width:520px; width:94%; box-shadow:0 10px 30px rgba(0,0,0,0.3); opacity:0; transform:translateY(18px); animation: modalCardIn 0.4s ease-out forwards; }
     @keyframes modalOverlayIn { from { opacity:0 } to { opacity:1 } }
@@ -327,7 +346,6 @@
           const isOrganizer = urlContestantId === 0;
           let nextState = parsed.gameState || (parsed.contestants?.length ? (isOrganizer ? 'setup' : 'active') : 'setup');
           setGameState(nextState);
-          // Wizard entry on load
           if (nextState === 'setup') setUiStep('addGuests');
           else if (nextState === 'active' && !parsed.gameStarted) setUiStep('addGuests');
           else setUiStep('addGuests');
@@ -460,7 +478,7 @@
       saveGame({ hostDates: hd, accepted: a });
     };
 
-    // Organiser checks & order
+    // Order
     const canOrganiserStart = () => {
       if (contestants.length < 2) return false;
       for (let i=0;i<contestants.length;i++) {
@@ -543,19 +561,19 @@
           setTempScore(''); setTempComment('');
         }
       } else {
-        const enabledCats = (categories || []).filter(c => c.enabled).slice(0,3).map(c => c.name);
-        if (!enabledCats.length) { alert('No categories selected for scoring.'); return; }
-        for (const cat of enabledCats) {
+        const enabled = (categories || []).filter(c => c.enabled).slice(0,3).map(c => c.name);
+        if (!enabled.length) { alert('No categories selected for scoring.'); return; }
+        for (const cat of enabled) {
           const v = tempCategoryScores[cat];
           if (v === undefined || v === '' || isNaN(parseFloat(v))) { alert(`Please provide a score for "${cat}"`); return; }
           const nv = parseFloat(v);
           if (nv < 0 || nv > 10) { alert(`Scores must be between 0 and 10 (problem: ${cat})`); return; }
         }
-        const nums = enabledCats.map(cat => parseFloat(tempCategoryScores[cat]));
-        const overall = Math.round((avg(nums) * 10)) / 10;
+        const nums = enabled.map(cat => parseFloat(tempCategoryScores[cat]));
+        const overall = Math.round((avg(nums) * 10)) / 10; // 1 decimal
         const s = {...scores}; const cm = {...comments};
         s[hostIdx] = s[hostIdx] || {};
-        s[hostIdx][myContestantId] = { categories: enabledCats.reduce((acc,cat)=>{ acc[cat]=parseFloat(tempCategoryScores[cat]); return acc; },{}), overall };
+        s[hostIdx][myContestantId] = { categories: enabled.reduce((acc,cat)=>{ acc[cat]=parseFloat(tempCategoryScores[cat]); return acc; },{}), overall };
         cm[hostIdx] = cm[hostIdx] || {};
         cm[hostIdx][myContestantId] = tempComment;
         setScores(s); setComments(cm);
@@ -696,18 +714,37 @@
               {scoringMode === 'categories' && (
                 <div className="card" style={{marginTop:'12px'}}>
                   <h3>Select up to 3 categories</h3>
-                  <div className="cat-row">
+
+                  <div className="cat-grid">
                     {categories.map((c) => (
                       <label key={c.name} className="cat-chip">
-                        <input type="checkbox" checked={!!c.enabled} onChange={()=>toggleCategory(c.name)} />
+                        <input
+                          type="checkbox"
+                          checked={!!c.enabled}
+                          onChange={() => toggleCategory(c.name)}
+                          aria-label={`Toggle ${c.name}`}
+                        />
                         <span>{c.name}</span>
                       </label>
                     ))}
                   </div>
-                  <div style={{display:'flex', gap:'8px', marginTop:'10px'}}>
-                    <input id="new-cat" placeholder="Add custom category (e.g. Ambience)" />
-                    <button className="btn-ghost" onClick={()=>{ const el=document.getElementById('new-cat'); if (!el) return; const v=el.value; addCustomCategory(v); el.value=''; }}>Add</button>
+
+                  <div style={{display:'flex', gap:'8px', marginTop:'10px', flexWrap:'wrap'}}>
+                    <input id="new-cat" placeholder="Add custom category (e.g. Ambience)" style={{flex:'1 1 220px'}} />
+                    <button
+                      className="btn-ghost"
+                      onClick={() => {
+                        const el = document.getElementById('new-cat');
+                        if (!el) return;
+                        const v = el.value;
+                        addCustomCategory(v);
+                        el.value = '';
+                      }}
+                    >
+                      Add
+                    </button>
                   </div>
+
                   <div className="muted" style={{marginTop:'8px'}}>Enabled: {categories.filter(c=>c.enabled).length}/3</div>
                 </div>
               )}
@@ -805,16 +842,17 @@
     }
 
     /* ---------------------------
-       RENDER: ACTIVE (RSVP stays light; scoring dark)
+       RENDER: ACTIVE
+       - RSVP stays light
+       - After start → dark (effect above)
        --------------------------- */
     if (gameState === 'active') {
-      // RSVP screen for a guest
       const myAccepted = myContestantId !== null ? !!accepted[myContestantId] : false;
       const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
       const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
 
       if (!gameStarted) {
-        // Guests RSVP view (light theme remains)
+        // Guests RSVP
         if (myContestantId !== null && !myAccepted) {
           const disabledForMe = new Set(Object.entries(hostDates).filter(([k,v]) => parseInt(k,10) !== myContestantId && v).map(([_,v])=>v));
           const today = new Date(); today.setHours(0,0,0,0);
@@ -933,7 +971,7 @@
                     <div className="muted" style={{marginTop:6}}>Once the organiser starts the competition, you will be able to submit scores (when voting opens).</div>
                   </div>
 
-                  <div style={{marginTop:12}} className="muted">Group progress: {acceptedCount}/{contestants.length} accepted</div>
+                  <div style={{marginTop:12}} className="muted">Group progress: {Object.values(accepted).filter(Boolean).length}/{contestants.length} accepted</div>
                 </div>
               )}
             </div>
@@ -942,12 +980,12 @@
               <h3>Schedule Preview (chronological)</h3>
               <div style={{marginTop:12}}>
                 { (hostingOrder && hostingOrder.length) ? (
-                  <div style="display:flex; overflow-x:auto; gap:1rem; padding:1rem; background:#f9fafb; border-radius:8px;">
+                  <div style={{display:'flex', overflowX:'auto', gap:'1rem', padding:'1rem', background:'#f9fafb', borderRadius:'8px'}}>
                     {hostingOrder.map((idx, i) => (
-                      <div key={i} className={`list-item`} style="min-width:150px; display:block;">
-                        <div style="font-size:.75rem; opacity:.8">Round {i+1}</div>
-                        <div style="font-weight:bold; margin-top:6px">{contestants[idx]}</div>
-                        <div style="font-size:.8rem; margin-top:6px">{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
+                      <div key={i} className="list-item" style={{minWidth:'150px', display:'block'}}>
+                        <div style={{fontSize:'.75rem', opacity:.8}}>Round {i+1}</div>
+                        <div style={{fontWeight:'bold', marginTop:6}}>{contestants[idx]}</div>
+                        <div style={{fontSize:'.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
                       </div>
                     ))}
                   </div>
@@ -1079,12 +1117,12 @@
             <h3>Competition Schedule (chronological)</h3>
             <div style={{marginTop:12}}>
               { (hostingOrder && hostingOrder.length) ? (
-                <div style="display:flex; overflow-x:auto; gap:1rem; padding:1rem; background:#f9fafb; border-radius:8px;">
+                <div style={{display:'flex', overflowX:'auto', gap:'1rem', padding:'1rem', background:'#f9fafb', borderRadius:'8px'}}>
                   {hostingOrder.map((idx, i) => (
-                    <div key={i} className={`list-item`} style="min-width:150px; display:block;">
-                      <div style="font-size:.75rem; opacity:.8">Round {i+1}</div>
-                      <div style="font-weight:bold; margin-top:6px">{contestants[idx]}</div>
-                      <div style="font-size:.8rem; margin-top:6px">{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
+                    <div key={i} className="list-item" style={{minWidth:'150px', display:'block'}}>
+                      <div style={{fontSize:'.75rem', opacity:.8}}>Round {i+1}</div>
+                      <div style={{fontWeight:'bold', marginTop:6}}>{contestants[idx]}</div>
+                      <div style={{fontSize:'.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
                     </div>
                   ))}
                 </div>
@@ -1239,7 +1277,7 @@
       );
     }
 
-    // Fallback (avoid blank page)
+    // Fallback
     return (
       <div className="container">
         <div className="card" style={{textAlign:'center'}}>
@@ -1253,7 +1291,6 @@
   ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
   </script>
 
-  <!-- Errors to console -->
   <script>window.addEventListener('error', (e) => console.error('Window error:', e.error || e.message));</script>
 </body>
 </html>
