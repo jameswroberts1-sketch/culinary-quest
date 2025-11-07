@@ -3,84 +3,84 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Voting Lock + Toasts</title>
+  <title>Culinary Quest — Full App (Modal + Safe Load)</title>
 
-  <!-- React & Babel for quick local/demo usage -->
+  <!-- React & Babel (dev) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
   <style>
-    * { box-sizing: border-box; margin:0; padding:0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      min-height:100vh;
       background: linear-gradient(135deg,#334155,#57534e,#1e293b);
-      padding:1rem;
-      color:#1f2937;
+      color: #1f2937;
+      min-height: 100vh;
+      padding: 1rem;
     }
-    .container { max-width:1000px; margin:0 auto; padding:0 1rem; }
-    .card { background:#fff; border-radius:12px; padding:1.25rem; box-shadow:0 10px 24px rgba(0,0,0,0.12); margin-bottom:1rem; }
-    .title { color:#fff; text-align:center; font-size:2rem; margin-bottom:.25rem; }
-    .subtitle { color:#fff; text-align:center; margin-bottom:1rem; opacity:.95; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 1rem; }
+    .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 10px 24px rgba(0,0,0,0.12); margin-bottom: 1rem; }
+    .title { color: #fff; text-align: center; font-size: 2rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #fff; text-align: center; margin-bottom: 1rem; opacity: 0.95; }
 
-    /* keep input font-size >=16px to stop iOS zoom */
-    input, textarea { padding:.5rem; border-radius:8px; border:1px solid #e5e7eb; width:100%; font-size:16px; }
-    textarea { min-height:64px; resize:vertical; }
+    /* prevent iOS zoom on focus by using >=16px font-size */
+    input, textarea { padding: 0.5rem; border-radius: 8px; border:1px solid #e5e7eb; width:100%; font-size:16px; }
+    textarea { resize:vertical; min-height:64px; }
 
-    button { cursor:pointer; border:none; border-radius:8px; padding:.6rem 1rem; font-weight:600; }
-    .btn-primary { background:#dc2626; color:#fff; }
-    .btn-success { background:#16a34a; color:#fff; }
-    .btn-secondary { background:#ea580c; color:#fff; }
-    .btn-ghost { background:transparent; border:1px solid #e5e7eb; color:#374151; padding:.45rem .75rem; }
+    button { cursor: pointer; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-weight: 600; }
+    .btn-primary { background: #dc2626; color: #fff; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-secondary { background: #ea580c; color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid #e5e7eb; color: #374151; padding:0.45rem 0.75rem; }
 
-    .muted { color:#6b7280; }
-    .flex { display:flex; gap:.5rem; align-items:center; }
+    .muted { color: #6b7280; }
+    .flex { display:flex; gap:0.5rem; align-items:center; }
     .space-between { display:flex; justify-content:space-between; align-items:center; }
 
-    .calendar { width:100%; max-width:420px; margin:.75rem auto 0; }
-    .cal-header { display:flex; justify-content:space-between; align-items:center; padding:.5rem; }
-    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; padding:.5rem; }
+    .calendar { width: 100%; max-width: 420px; margin: 0.75rem auto 0; }
+    .cal-header { display:flex; justify-content:space-between; align-items:center; padding:0.5rem; }
+    .cal-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; padding:0.5rem; }
     .cal-day { height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; user-select:none; }
     .cal-day.disabled { background:#f3f4f6; color:#9ca3af; cursor:not-allowed; }
     .cal-day.available { background:#fff; cursor:pointer; border:1px solid #e5e7eb; }
     .cal-day.selected { background:#ea580c; color:#fff; font-weight:700; }
-    .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; padding:6px 0; color:#6b7280; font-size:.85rem; text-align:center; }
+    .cal-weekdays { display:grid; grid-template-columns: repeat(7,1fr); gap:6px; padding:6px 0; color:#6b7280; font-size:0.85rem; text-align:center; }
 
-    .rsvp-card { margin-top:.75rem; padding:1.25rem; border-radius:12px; background: linear-gradient(135deg,#fef3c7,#fde68a); border:2px solid #f59e0b; box-shadow:0 4px 12px rgba(245,158,11,0.12); }
-    .list { margin-top:.75rem; }
-    .list-item { padding:.6rem; border-radius:8px; background:#fff; display:flex; justify-content:space-between; align-items:center; border:1px solid #f1f5f9; margin-bottom:.5rem; }
-    .badge { padding:.25rem .5rem; border-radius:6px; font-size:.8rem; color:#fff; background:#3b82f6; }
+    .rsvp-card { margin-top: 0.75rem; padding:1.25rem; border-radius:12px; background: linear-gradient(135deg, #fef3c7, #fde68a); border: 2px solid #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.12); }
+    .list { margin-top:0.75rem; }
+    .list-item { padding:0.6rem; border-radius:8px; background:#fff; display:flex; justify-content:space-between; align-items:center; border:1px solid #f1f5f9; margin-bottom:0.5rem; }
+    .badge { padding:0.25rem 0.5rem; border-radius:6px; font-size:0.8rem; color:#fff; background:#3b82f6; }
 
-    .progress-bar { height:10px; background:#e5e7eb; border-radius:8px; overflow:hidden; margin-top:.5rem; }
-    .progress-fill { height:100%; background:#ea580c; transition:width .25s ease; }
+    .progress-bar { height:10px; background:#e5e7eb; border-radius:8px; overflow:hidden; margin-top:0.5rem; }
+    .progress-fill { height:100%; background:#ea580c; transition: width 0.25s ease; }
 
-    .wait-box { background:#dbeafe; border:1px solid #bfdbfe; padding:.75rem; border-radius:8px; color:#1e3a8a; margin-top:12px; text-align:center; }
+    .wait-box { background:#dbeafe; border:1px solid #bfdbfe; padding:0.75rem; border-radius:8px; color:#1e3a8a; margin-top:12px; text-align:center; }
 
     .timeline { display:flex; overflow-x:auto; gap:1rem; padding:1rem; background:#f9fafb; border-radius:8px; }
     .timeline-card { min-width:150px; padding:1rem; background:#fff; border-radius:8px; border:2px solid #e5e7eb; text-align:center; }
     .timeline-card.current { background:#ea580c; color:#fff; border-color:#ea580c; }
     .timeline-card.complete { border-color:#10b981; }
 
-    /* modal */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
-    .modal { background:#fff; padding:1.5rem; border-radius:12px; max-width:420px; width:94%; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
-    .modal h3 { margin-bottom:.5rem; }
-    .modal ul { list-style:none; margin:0; padding:0; }
-    .modal li { margin:.25rem 0; }
-    .modal-actions { display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem; }
+    .saving-pill { position:fixed; right:16px; bottom:16px; background:#111827; color:#fff; padding:8px 12px; border-radius:999px; font-size:0.9rem; opacity:0.92; box-shadow:0 6px 18px rgba(0,0,0,0.24); }
 
-    /* toast */
-    .toast {
-      position:fixed; left:50%; transform:translateX(-50%); bottom:20px;
-      background:rgba(17,24,39,0.95); color:#fff; padding:.6rem 1rem; border-radius:999px; box-shadow:0 8px 30px rgba(0,0,0,.32);
-      z-index:1100; display:flex; align-items:center; gap:.6rem; font-weight:600;
+    /* modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display:flex; align-items:center; justify-content:center; z-index:1000;
     }
-    .toast.success { background:#064e3b; }
-    .toast.error { background:#7f1d1d; }
+    .modal {
+      background:#fff; padding:1.5rem; border-radius:12px; max-width:420px; width:94%;
+      box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    }
+    .modal h3 { margin-bottom:0.5rem; }
+    .modal ul { list-style:none; margin:0; padding:0; }
+    .modal li { margin:0.25rem 0; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem; }
 
     @media (max-width:900px) { .space-between { flex-direction:column; align-items:flex-start; gap:8px; } }
-    @media (max-width:600px) { .calendar { max-width:100%; } .cal-day { height:36px; font-size:.85rem; } .timeline-card { min-width:130px; } }
+    @media (max-width:600px) { .calendar { max-width: 100%; } .cal-day { height:36px; font-size:0.85rem; } .timeline-card { min-width:130px; } }
   </style>
 </head>
 <body>
@@ -89,10 +89,13 @@
   <script type="text/babel">
   const { useState, useEffect, useMemo, useRef } = React;
 
-  // storage shim (wraps localStorage)
+  // storage shim
   if (!window.storage) {
     window.storage = {
-      async get(k) { const v = localStorage.getItem(k); return v ? { value: v } : null; },
+      async get(k) {
+        const v = localStorage.getItem(k);
+        return v ? { value: v } : null;
+      },
       async set(k, v) { localStorage.setItem(k, v); },
       async delete(k) { localStorage.removeItem(k); }
     };
@@ -116,7 +119,7 @@
     return datePart + timePart;
   }
 
-  // Calendar component (single-month)
+  // Calendar component (single month)
   function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }) {
     const today = new Date();
     const start = selectedDate ? new Date(selectedDate) : today;
@@ -149,14 +152,12 @@
       <div className="calendar card" aria-hidden={false}>
         <div className="cal-header">
           <button className="btn-ghost" onClick={prevMonth}>&larr;</button>
-          <div style={{fontWeight:700}}>{firstOfMonth.toLocaleString(undefined, { month:'long', year:'numeric' })}</div>
+          <div style={{fontWeight:700}}>{firstOfMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
           <button className="btn-ghost" onClick={nextMonth}>&rarr;</button>
         </div>
-
         <div className="cal-weekdays">
           {weekdayNames.map(w => <div key={w} style={{textAlign:'center'}}>{w}</div>)}
         </div>
-
         <div className="cal-grid">
           {cells.map((cell, idx) => {
             if (cell === null) return <div key={idx}></div>;
@@ -166,7 +167,11 @@
             const isSelected = selectedDate && formatDateISO(new Date(selectedDate)) === cellISO;
             const cls = isDisabled ? 'cal-day disabled' : (isSelected ? 'cal-day selected' : 'cal-day available');
             const handle = () => { if (!isDisabled) onSelect(cellISO); };
-            return <div key={idx} className={cls} onClick={handle} title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}>{cell.getDate()}</div>;
+            return (
+              <div key={idx} className={cls} onClick={handle} title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}>
+                {cell.getDate()}
+              </div>
+            );
           })}
         </div>
       </div>
@@ -175,7 +180,7 @@
 
   // Main app
   function CulinaryQuest() {
-    // persisted state
+    // persistent state
     const [gameState, setGameState] = useState('loading'); // setup | active | results
     const [gameId, setGameId] = useState(null);
     const [contestants, setContestants] = useState([]);
@@ -198,24 +203,13 @@
     const [saving, setSaving] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
 
-    // modal + schedule
+    // modal
     const [showStartModal, setShowStartModal] = useState(false);
     const [scheduleText, setScheduleText] = useState([]);
 
-    // toast
-    const [toast, setToast] = useState(null); // { message, type }
-    const toastTimerRef = useRef(null);
-
     const debounceRef = useRef(null);
 
-    // show toast helper
-    const showToast = (message, type='success') => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      setToast({ message, type });
-      toastTimerRef.current = setTimeout(() => setToast(null), 3000);
-    };
-
-    // read URL params at start
+    // load URL params once
     useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const g = params.get('game');
@@ -228,7 +222,7 @@
       else { const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9); setGameId(newId); setGameState('setup'); }
     }, []);
 
-    // safe loadGame — uses URL param to decide organizer vs guest routing
+    // loadGame - SAFE: use URL param to decide organiser vs guest routing
     const loadGame = async (g) => {
       try {
         setSaving(true);
@@ -236,6 +230,7 @@
         if (d && d.value) {
           const parsed = JSON.parse(d.value);
 
+          // populate state
           setContestants(parsed.contestants || []);
           setAccepted(parsed.accepted || {});
           setHostDates(parsed.hostDates || {});
@@ -246,30 +241,35 @@
           setCurrentRound(parsed.currentRound || 0);
           setGameStarted(parsed.gameStarted || false);
 
-          // Determine isOrganizer using URL param (safe)
+          // Determine isOrganizer using URL param (safe even if myContestantId state hasn't updated yet)
           const urlParams = new URLSearchParams(window.location.search);
           const cParam = urlParams.get('c');
           const urlContestantId = (cParam !== null && cParam !== undefined) ? parseInt(cParam, 10) : null;
           const isOrganizer = urlContestantId === 0;
 
+          // Choose nextState:
+          // - if parsed.gameState exists, trust it
+          // - else if contestants exist: organiser -> 'setup', others -> 'active'
+          // - else -> 'setup'
           let nextState = 'setup';
-          if (parsed.gameState) nextState = parsed.gameState;
-          else if (parsed.contestants && parsed.contestants.length) nextState = isOrganizer ? 'setup' : 'active';
+          if (parsed.gameState) {
+            nextState = parsed.gameState;
+          } else if (parsed.contestants && parsed.contestants.length) {
+            nextState = isOrganizer ? 'setup' : 'active';
+          }
           setGameState(nextState);
-          showToast('Loaded game', 'success');
         } else {
           setGameState('setup');
         }
       } catch (e) {
         console.error('loadGame error:', e);
         setGameState('setup');
-        showToast('Error loading game', 'error');
       } finally {
         setSaving(false);
       }
     };
 
-    // saveGame persists state and shows toast on success or error
+    // saveGame persists the full state (and optionally merges patch)
     const saveGame = async (patch = {}) => {
       setSaving(true);
       try {
@@ -289,22 +289,19 @@
         setGameStarted(data.gameStarted ?? gameStarted);
         setGameState(data.gameState ?? gameState);
         await window.storage.set(gameId, JSON.stringify(data));
-        showToast('Saved ✓', 'success');
       } catch (e) {
-        console.error('saveGame error', e);
-        showToast('Error ⚠️', 'error');
+        console.error('saveGame', e);
       } finally {
         setSaving(false);
       }
     };
 
-    // debounced for frequent updates
     const saveGameDebounced = (patch = {}) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => saveGame(patch), 600);
     };
 
-    // add/remove participants
+    // add / remove contestants (organiser is index 0)
     const addContestant = () => {
       if (!newContestantName.trim() || contestants.length >= 6) return;
       const updated = [...contestants, newContestantName.trim()];
@@ -357,7 +354,7 @@
     const getContestantLink = (i) => `${window.location.href.split('?')[0]}?game=${gameId}&c=${i}`;
     const copyLink = (i) => { navigator.clipboard.writeText(getContestantLink(i)); setCopiedIndex(i); setTimeout(()=>setCopiedIndex(null),2000); };
 
-    // RSVP & date selection validation
+    // RSVP & date selection w/ validation
     const selectDateFor = (index, isoDate, time) => {
       try {
         const selectedDate = new Date(isoDate);
@@ -392,7 +389,7 @@
     const unacceptInvitation = (index) => { const a = {...accepted}; delete a[index]; setAccepted(a); saveGame({ accepted: a }); };
     const declineInvitation = (index) => { if (!confirm('Decline invitation? This will clear your date selection.')) return; const hd={...hostDates}; delete hd[index]; const a={...accepted}; delete a[index]; setHostDates(hd); setAccepted(a); saveGame({ hostDates: hd, accepted: a }); };
 
-    // organiser checks & ordering
+    // organiser checks
     const canOrganiserStart = () => {
       if (contestants.length < 2) return false;
       for (let i=0;i<contestants.length;i++) {
@@ -415,6 +412,7 @@
       return order;
     };
 
+    // start competition
     const startCompetition = () => {
       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
       const order = prepareHostingOrderChrono();
@@ -430,17 +428,19 @@
       saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order, gameState: 'active' });
     };
 
-    // storage listener to sync across tabs
+    // storage listener: reload when the same key changes in other tabs
     useEffect(() => {
       if (!gameId) return;
       const handler = (e) => {
-        if (e.key === gameId) loadGame(gameId);
+        if (e.key === gameId) {
+          loadGame(gameId);
+        }
       };
       window.addEventListener('storage', handler);
       return () => window.removeEventListener('storage', handler);
     }, [gameId]);
 
-    // ensure hostingOrder exists
+    // ensure hostingOrder exists if game started
     useEffect(() => {
       if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
         const order = prepareHostingOrderChrono();
@@ -448,7 +448,7 @@
       }
     }, [gameStarted, contestants, hostDates]);
 
-    // scoring submit
+    // scoring
     const submitScore = () => {
       if (!gameStarted) return;
       const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
@@ -478,30 +478,7 @@
       return totals;
     };
 
-    // voting unlock helper (Option B: if time provided -> +6h; else -> next-day midnight)
-    const votingUnlockForHost = (hostIdx) => {
-      const dateISO = hostDates[hostIdx];
-      if (!dateISO) return null; // no date -> no scheduled time (treat as immediate? we'll return null)
-      const time = hostTimes[hostIdx];
-      let scheduled;
-      if (time) {
-        // use provided time
-        scheduled = new Date(`${dateISO}T${time}`);
-      } else {
-        // assume midnight for the date, then add 24h to get next-day midnight
-        scheduled = new Date(`${dateISO}T00:00`);
-      }
-      const unlockMs = scheduled.getTime() + (time ? 6 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000);
-      return new Date(unlockMs);
-    };
-
-    const isVotingOpenForHost = (hostIdx) => {
-      const unlock = votingUnlockForHost(hostIdx);
-      if (!unlock) return true; // if no date, treat as open to avoid blocking; (or you can choose false)
-      return new Date() >= unlock;
-    };
-
-    // derived values
+    // derived
     const organiser = myContestantId === 0;
     const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
     const hostName = contestants[hostIdx] ?? null;
@@ -514,7 +491,7 @@
     const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
     const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
 
-    // safety net: guests shouldn't be in setup
+    // safety net: if a non-organizer somehow ends up in 'setup', move them to 'active'
     useEffect(() => {
       if (myContestantId !== null && myContestantId !== 0 && gameState === 'setup') {
         setGameState('active');
@@ -742,10 +719,6 @@
 
       // GAME STARTED: scoring UI
       const totals = calculateTotals();
-      // compute whether voting is open for this host
-      const votingOpen = isVotingOpenForHost(hostIdx);
-      const unlockDate = votingUnlockForHost(hostIdx);
-
       return (
         <div className="container">
           <h1 className="title">🍽️ Culinary Quest</h1>
@@ -772,32 +745,21 @@
               </div>
             </div>
 
-            {/* Voting locked banner vs scoring form */}
-            {!votingOpen ? (
-              <div className="card" style={{background:'#dbeafe', marginBottom:12}}>
-                <h3 style={{marginTop:0}}>⏳ Voting not open yet</h3>
-                <p className="muted">
-                  Voting for <strong>{hostName}</strong>&nbsp;opens {unlockDate ? unlockDate.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : 'soon'}.
-                </p>
-                <p className="muted" style={{marginTop:6}}>You will be able to submit your score after that time.</p>
-              </div>
-            ) : (
-              myContestantId !== null && myContestantId !== hostIdx && !iHaveScored && (
-                <div className="card" style={{background:'#fef3c7', marginBottom:12}}>
-                  <h3>Score tonight's host: {hostName}</h3>
-                  <div style={{marginTop:8}}>
-                    <label className="muted">Your score (0–10)</label>
-                    <input inputMode="numeric" type="number" min="0" max="10" value={tempScore} onChange={e=>setTempScore(e.target.value)} />
-                  </div>
-                  <div style={{marginTop:8}}>
-                    <label className="muted">Comment (optional)</label>
-                    <textarea rows="3" value={tempComment} onChange={e=>{ setTempComment(e.target.value); saveGameDebounced({ comments: { ...comments, [hostIdx]: { ...(comments[hostIdx] || {}), [myContestantId]: e.target.value } } }); }} />
-                  </div>
-                  <div style={{marginTop:8}}>
-                    <button className="btn-primary" onClick={submitScore} disabled={tempScore === '' || parseInt(tempScore,10) < 0 || parseInt(tempScore,10) > 10}>Submit Score</button>
-                  </div>
+            { myContestantId !== null && myContestantId !== hostIdx && !iHaveScored && (
+              <div className="card" style={{background:'#fef3c7', marginBottom:12}}>
+                <h3>Score tonight's host: {hostName}</h3>
+                <div style={{marginTop:8}}>
+                  <label className="muted">Your score (0–10)</label>
+                  <input inputMode="numeric" type="number" min="0" max="10" value={tempScore} onChange={e=>setTempScore(e.target.value)} />
                 </div>
-              )
+                <div style={{marginTop:8}}>
+                  <label className="muted">Comment (optional)</label>
+                  <textarea rows="3" value={tempComment} onChange={e=>{ setTempComment(e.target.value); saveGameDebounced({ comments: { ...comments, [hostIdx]: { ...(comments[hostIdx] || {}), [myContestantId]: e.target.value } } }); }} />
+                </div>
+                <div style={{marginTop:8}}>
+                  <button className="btn-primary" onClick={submitScore} disabled={tempScore === '' || parseInt(tempScore,10) < 0 || parseInt(tempScore,10) > 10}>Submit Score</button>
+                </div>
+              </div>
             )}
 
             { myContestantId === hostIdx && <div className="card" style={{background:'#fef3c7'}}>🍽️ You're tonight's host — you don't score yourself.</div> }
@@ -917,11 +879,7 @@
     return null;
   }
 
-  // mount
   ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
   </script>
-
-  <!-- Toast element rendered by React; nothing else needed here -->
-
 </body>
 </html>
