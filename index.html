@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Culinary Quest — Full Flow (Firebase, Compact, Wizard v2)</title>
+<title>Culinary Quest — Full Flow (Stable Inputs + Stable Phase)</title>
 
 <!-- React + Babel -->
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
@@ -26,20 +26,15 @@
     measurementId: "G-EMF9YGM2LT"
   };
 
-  (function init(){
-    try{
-      const app = initializeApp(FIREBASE_CONFIG);
-      const db = getDatabase(app);
-      window.__CQ_DB__ = db;
-      window.__CQ_FB_READY__ = true;
-      console.log("[CQ] Firebase ready");
-    }catch(e){
-      console.warn("[CQ] Firebase init failed", e);
-      window.__CQ_FB_READY__ = false;
-    }
-  })();
-
-  // expose for inline script
+  try{
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getDatabase(app);
+    window.__CQ_DB__ = db;
+    window.__CQ_FB_READY__ = true;
+  }catch(e){
+    console.warn("[CQ] Firebase init failed", e);
+    window.__CQ_FB_READY__ = false;
+  }
   window.__CQ_fb = { ref, onValue, set, remove, get, child, update };
 </script>
 
@@ -87,8 +82,6 @@
   .modal h3{margin-bottom:6px}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
   .logo{width:100px;height:100px;margin:10px auto 0;display:block}
-
-  /* Calendar */
   .calendar{width:100%;max-width:420px;margin:.75rem auto 0;}
   .cal-header{display:flex;justify-content:space-between;align-items:center;padding:.5rem;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:.5rem;}
@@ -97,20 +90,14 @@
   .cal-day.available{background:#fff;cursor:pointer;border:1px solid #e5e7eb;}
   .cal-day.selected{background:#ea580c;color:#fff;font-weight:700;}
   .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:6px 0;color:#6b7280;font-size:.85rem;text-align:center;}
-
-  /* Splash */
-  .splash-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  .splash-card{max-width:560px;text-align:center}
-  .splash-quote{font-size:1.05rem;color:#7c5a00;background:#fff8db;border:2px solid #f59e0b;border-radius:12px;padding:.8rem 1rem;margin-top:10px}
 </style>
 </head>
 <body>
 <div id="root"></div>
 
-<!-- Copy -->
 <script>
   window.COPY = {
-    "splash": [
+    splash: [
       "🍽️ Cook. Compete. Conquer.",
       "🔥 Your dining table just became centre stage!",
       "🥇 Who will be crowned the Culinary Conquistador?",
@@ -120,68 +107,56 @@
       "🔥 Fire up the oven — it’s showtime!",
       "✨ Serve your best. Score the rest."
     ],
-    "organiser": {
-      "game_created": "🎉 Culinary Quest ready! Let the dinner drama begin.",
-      "guest_added": "👋 A new challenger enters the kitchen!",
-      "link_copied": "🔗 Invite link copied — your contestant awaits!",
-      "all_dates_set": "📅 Schedule locked and loaded — it’s almost showtime!",
-      "game_started": "🎬 And we’re live! Round One of the Quest begins now.",
-      "next_round": "🍷 On to the next host — keep those scores coming!",
-      "all_scores_in": "🏁 Scores complete! Ready to reveal the Culinary Conquistador?",
-      "competition_ended": "🎉 What a feast! Time to announce your champion.",
-      "prize_reminder": "💡 Don’t forget — the winner takes the mystery reward!"
+    organiser: {
+      game_created: "🎉 Culinary Quest ready! Let the dinner drama begin.",
+      guest_added: "👋 A new challenger enters the kitchen!",
+      link_copied: "🔗 Invite link copied — your contestant awaits!",
+      all_dates_set: "📅 Schedule locked and loaded — it’s almost showtime!",
+      game_started: "🎬 And we’re live! Round One of the Quest begins now.",
+      next_round: "🍷 On to the next host — keep those scores coming!",
+      all_scores_in: "🏁 Scores complete! Ready to reveal the Culinary Conquistador?",
+      competition_ended: "🎉 What a feast! Time to announce your champion.",
+      prize_reminder: "💡 Don’t forget — the winner takes the mystery reward!"
     },
-    "player": {
-      "invitation_accepted": "✅ You’re officially in the Quest — time to bring your A-game!",
-      "hosting_date_chosen": "📆 Great pick! Your culinary spotlight awaits.",
-      "score_submitted": "🥄 Score locked in — let’s see how the rankings simmer.",
-      "host_cannot_score": "🍽️ Tonight you’re the star — no judging your own masterpiece!",
-      "waiting_for_organiser": "⏳ Hang tight — the Organiser’s prepping the next course.",
-      "voting_not_open": "⏰ The judging table opens soon. Keep your forks poised.",
-      "competition_complete": "🏆 That’s a wrap! The final results are in.",
-      "tie_result": "🤝 A draw! Two chefs, one crown — a true culinary cliffhanger."
+    player: {
+      invitation_accepted: "✅ You’re officially in the Quest — time to bring your A-game!",
+      hosting_date_chosen: "📆 Great pick! Your culinary spotlight awaits.",
+      score_submitted: "🥄 Score locked in — let’s see how the rankings simmer.",
+      host_cannot_score: "🍽️ Tonight you’re the star — no judging your own masterpiece!",
+      waiting_for_organiser: "⏳ Hang tight — the Organiser’s prepping the next course.",
+      voting_not_open: "⏰ The judging table opens soon. Keep your forks poised.",
+      competition_complete: "🏆 That’s a wrap! The final results are in.",
+      tie_result: "🤝 A draw! Two chefs, one crown — a true culinary cliffhanger."
     },
-    "results": {
-      "winner_reveal": "🎺 Drumroll, please... presenting our Culinary Conquistador!",
-      "tie_reveal": "🤝 It’s a tie! Two taste titans share the crown!",
-      "share_results": "📣 Spread the glory — your Quest is complete!",
-      "start_new_competition": "🔥 Ready for a rematch? A new Quest awaits!"
-    },
-    "easter_eggs": [
-      "🥘 Caution: excessive bragging rights ahead.",
-      "🍾 Someone’s about to dine out on this victory.",
-      "🎤 Remember, presentation counts — and so does your poker face.",
-      "🍰 Save room for dessert… and a dose of humble pie.",
-      "🎯 The only thing sharper than your knives should be your wit.",
-      "🥂 Cheers to good friends, great food, and questionable scoring."
-    ]
+    results: {
+      winner_reveal: "🎺 Drumroll, please... presenting our Culinary Conquistador!",
+      tie_reveal: "🤝 It’s a tie! Two taste titans share the crown!",
+      share_results: "📣 Spread the glory — your Quest is complete!",
+      start_new_competition: "🔥 Ready for a rematch? A new Quest awaits!"
+    }
   };
   window.showToast = function(msg='Done', dur=1500){
     const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
     document.body.appendChild(t); t.classList.add('show');
     setTimeout(()=>{ t.style.animation='tout .35s ease-in forwards'; setTimeout(()=>t.remove(),380); }, dur);
   };
-  window.randomSplash = ()=> (window.COPY?.splash||[])[Math.floor(Math.random()*((window.COPY?.splash||[]).length||1))]||'';
 </script>
 
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 const { ref, onValue, set, remove, get, child, update } = window.__CQ_fb;
 
-// DB helpers
 const db = ()=> window.__CQ_DB__;
 const r = (path)=> ref(db(), path);
-
-// URL helpers
+const qs = new URLSearchParams(location.search);
+const hasGameParam = qs.has('game');
 const baseUrl = ()=> location.href.split('?')[0];
 const makeGameId = ()=> 'cq_' + Math.random().toString(36).slice(2,9);
 const inviteLink = (gid, idx)=> `${baseUrl()}?game=${gid}&c=${idx}`;
-
-// Dates
 const fmtISO = (d)=>{ const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
 const fmtReadable = (iso, time)=>{ if(!iso) return 'Pending'; const d=new Date(iso+(time?`T${time}`:'T00:00')); const dt=d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); const tm=time?(' @ '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})) : ''; return dt+tm; };
+const ST = { SETUP:0, RSVP:1, STARTED:2, TERM:3, RES:4 };
 
-// Small logo
 function Logo(){
   const gold="#f59e0b";
   return (
@@ -203,7 +178,6 @@ function Logo(){
   );
 }
 
-// Calendar
 function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }){
   const today = new Date();
   const start = selectedDate ? new Date(selectedDate) : today;
@@ -229,22 +203,18 @@ function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }
   );
 }
 
-// Compact schema
-const ST = { SETUP:0, RSVP:1, STARTED:2, TERM:3, RES:4 };
-
 function App(){
-  // Splash until Firebase ready (or 1s fallback)
-  const [phase, setPhase] = useState('splash'); // splash | wizard | rsvp | game | results
-  useEffect(()=>{
-    const t = setTimeout(()=> setPhase('wizard'), 1000);
-    if(window.__CQ_FB_READY__) setPhase('wizard');
-    return ()=>clearTimeout(t);
-  },[]);
+  // PHASE: set once, based on URL. No timer that can override later.
+  const initialPhase = hasGameParam ? 'rsvp' : 'wizard';
+  const [phase, setPhase] = useState(initialPhase);
 
-  // Wizard v2
+  // Wizard state
   const [setupStep, setSetupStep] = useState(1);
-  const [organiserName, setOrganiserName] = useState('');
-  const [gameId, setGameId] = useState(makeGameId());
+  const organiserRef = useRef(null);        // uncontrolled
+  const newGuestRef = useRef(null);
+  const newCustomRef = useRef(null);
+
+  const [gameId, setGameId] = useState(hasGameParam ? qs.get('game') : makeGameId());
   const [scoringMode, setScoringMode] = useState('simple');
   const [categories, setCategories] = useState([
     { name:'Food', enabled:true, locked:true },
@@ -254,18 +224,16 @@ function App(){
     { name:'Entertainment', enabled:false }
   ]);
   const [customCats, setCustomCats] = useState([]);
-  const [newCustomCat, setNewCustomCat] = useState('');
-  const [contestants, setContestants] = useState(['']); // [organiserName,...]
-  const [newGuest, setNewGuest] = useState('');
+  const [contestants, setContestants] = useState(['']); // index 0 is organiser name
   const [showCancel, setShowCancel] = useState(false);
 
-  // Live game state
-  const [myContestantId, setMyContestantId] = useState(null);
+  // Live state
+  const [myContestantId, setMyContestantId] = useState(qs.has('c') ? parseInt(qs.get('c'),10) : null);
   const [st, setSt] = useState(ST.SETUP);
-  const [p, setP] = useState([]);          // participants
-  const [rsvp, setRsvp] = useState({});    // idx -> 1|-1|0
-  const [d, setD] = useState({});          // dates
-  const [t, setT] = useState({});          // times
+  const [p, setP] = useState([]);
+  const [rsvp, setRsvp] = useState({});
+  const [d, setD] = useState({});
+  const [t, setT] = useState({});
   const [m, setM] = useState({ sm:'s', cats:['Food'] });
   const [ord, setOrd] = useState([]);
   const [rd, setRd] = useState(0);
@@ -273,21 +241,10 @@ function App(){
   const [cm, setCm] = useState({});
   const unsubRef = useRef(null);
 
-  // read URL: join flow
+  // Subscribe if joining via link
   useEffect(()=>{
-    const q=new URLSearchParams(location.search);
-    const g=q.get('game'); const c=q.get('c');
-    if(g){
-      setGameId(g);
-      subscribe(g);
-      setPhase('rsvp');
-      setSt(ST.RSVP);
-      if(c!=null){ const n=parseInt(c,10); if(!Number.isNaN(n)) setMyContestantId(n); }
-    }
-  },[]);
-
-  function subscribe(gid){
-    if(!window.__CQ_FB_READY__) return;
+    if(!hasGameParam || !window.__CQ_FB_READY__) return;
+    const gid = qs.get('game');
     if(unsubRef.current) try{ unsubRef.current(); }catch(_){}
     unsubRef.current = onValue(r(`games/${gid}`),(snap)=>{
       if(!snap.exists()) return;
@@ -303,9 +260,10 @@ function App(){
       setSc(x.sc||{});
       setCm(x.cm||{});
       if(x.st===ST.STARTED) setPhase('game');
-      if(x.st===ST.RES) setPhase('results');
+      else if(x.st===ST.RES) setPhase('results');
+      else setPhase('rsvp'); // lock in RSVP; never flip back to wizard
     });
-  }
+  },[]);
 
   async function persistPatch(gid, patch){
     if(!window.__CQ_FB_READY__){ showToast('Network not ready'); return; }
@@ -313,9 +271,6 @@ function App(){
     const cur = snap.exists()? snap.val() : {};
     await set(r(`games/${gid}`), { ...cur, ...patch });
   }
-
-  // iOS input: use onInput; keep state tight
-  const onInputVal = (setter)=>(e)=> setter(e.target.value);
 
   // Categories
   const enabledCount = categories.filter(c=>c.enabled).length + customCats.filter(c=>c.enabled).length;
@@ -331,36 +286,29 @@ function App(){
     }));
   };
   const addCustomCategory = ()=>{
-    const v=(newCustomCat||'').trim();
+    const v=(newCustomRef.current?.value||'').trim();
     if(!v) return;
     if(customCats.length>=2){ showToast('You can add up to 2 custom categories'); return; }
     if(categories.some(c=>c.name.toLowerCase()===v.toLowerCase()) || customCats.some(c=>c.name.toLowerCase()===v.toLowerCase())){ showToast('Category already exists'); return; }
     const projected=enabledCount+1; if(projected>4){ showToast('Max 4 categories total'); return; }
-    setCustomCats([...customCats, {name:v, enabled:true, custom:true}]); setNewCustomCat('');
+    setCustomCats([...customCats, {name:v, enabled:true, custom:true}]); newCustomRef.current.value='';
   };
   const toggleCustomCategory = (name)=>{
-    setCustomCats(prev=> prev.map(c=>{
-      if(c.name!==name) return c;
-      const nextEnabled=!c.enabled;
-      const projected = enabledCount + (nextEnabled?1:-1);
-      if(nextEnabled && projected>4){ showToast('Max 4 categories total'); return c; }
-      return {...c, enabled: nextEnabled};
-    }));
+    setCustomCats(prev=> prev.map(c=> c.name===name ? {...c, enabled:!c.enabled} : c));
   };
   const removeCustomCategory = (name)=> setCustomCats(prev=>prev.filter(c=>c.name!==name));
 
   // Guests
   const addGuest = ()=>{
-    const v=(newGuest||'').trim(); if(!v) return;
+    const v=(newGuestRef.current?.value||'').trim(); if(!v) return;
     if(contestants.length>=6){ showToast('Limit 6 participants'); return; }
-    setContestants(prev=>[...prev, v]); setNewGuest(''); showToast(window.COPY.organiser.guest_added);
+    setContestants(prev=>[...prev, v]); newGuestRef.current.value=''; showToast(window.COPY.organiser.guest_added);
   };
   const removeGuest=(idx)=>{
     if(idx===0){ showToast('Cannot remove the first player'); return; }
     const next=contestants.filter((_,i)=>i!==idx); setContestants(next);
   };
 
-  // Cancel
   const doCancel = async ()=>{
     setShowCancel(false);
     try{ if(window.__CQ_FB_READY__) await remove(r(`games/${gameId}`)); }catch(_){}
@@ -369,7 +317,7 @@ function App(){
   };
 
   // Commit RSVP doc at end of Step 4
-  async function commitRSVPDoc(){
+  async function commitRSVPDoc(organiserName){
     if(!window.__CQ_FB_READY__){ showToast('Please check your connection'); throw new Error('fb not ready'); }
     const parts = [organiserName || 'Host', ...contestants.slice(1).filter(Boolean)];
     const cats = [
@@ -389,9 +337,11 @@ function App(){
       sc: {}, cm: {}
     };
     await set(r(`games/${gameId}`), payload);
-    // Sync local live state and URL as organiser (c=0)
-    setM(payload.m); setP(payload.p); setRsvp(payload.rsvp); setD({}); setT({}); setSt(ST.RSVP); setOrd([]); setRd(0); setSc({}); setCm({});
-    const u=new URLSearchParams(location.search); u.set('game', gameId); u.set('c', 0); history.replaceState({},'',`${location.pathname}?${u.toString()}`); setMyContestantId(0);
+    const u=new URLSearchParams(location.search); u.set('game', gameId); u.set('c', 0);
+    history.replaceState({},'',`${location.pathname}?${u.toString()}`);
+    setMyContestantId(0);
+    setP(parts); setM(payload.m); setRsvp(payload.rsvp); setD({}); setT({}); setSt(ST.RSVP); setOrd([]); setRd(0); setSc({}); setCm({});
+    setPhase('rsvp');
     showToast('✅ Game setup saved!', 1200);
   }
 
@@ -412,12 +362,10 @@ function App(){
     const initSc={}; const initCm={};
     p.forEach((_,h)=>{ initSc[h]={}; initCm[h]={}; p.forEach((__,s)=>{ if(s!==h){ initSc[h][s] = (smode==='s' ? null : { c:Object.fromEntries(cats.map(k=>[k,null])), o:null }); initCm[h][s]=''; } }); });
     await update(r(`games/${gameId}`), { st:ST.STARTED, rd:0, ord:order, sc:initSc, cm:initCm });
-    setSt(ST.STARTED); setRd(0); setOrd(order); setSc(initSc); setCm(initCm);
-    setPhase('game');
+    setSt(ST.STARTED); setRd(0); setOrd(order); setSc(initSc); setCm(initCm); setPhase('game');
     showToast(window.COPY.organiser.game_started);
   };
 
-  // Voting window
   const votingUnlock = (hostIdx)=>{
     const iso=d[hostIdx]; if(!iso) return null;
     const tm=t[hostIdx]; const sched=new Date(`${iso}T${tm?tm:'00:00'}`);
@@ -425,15 +373,6 @@ function App(){
     return new Date(ms);
   };
   const isVotingOpen = (hostIdx)=>{ const u=votingUnlock(hostIdx); return !u || new Date()>=u; };
-
-  // Category row
-  const CategoryRow = ({cat, locked, onToggle, onRemove}) => (
-    <label className="cat-chip" style={{opacity: locked? .85 : 1}}>
-      <input type="checkbox" disabled={locked} checked={!!cat.enabled} onChange={()=>onToggle(cat.name)} />
-      <span style={{flex:1}}>{cat.name}{locked && <span className="lock"> (compulsory)</span>}</span>
-      {onRemove && !locked && <button type="button" className="btn-ghost" onClick={onRemove}>Remove</button>}
-    </label>
-  );
 
   // Screens
   const Screen1 = ()=>(
@@ -448,18 +387,18 @@ function App(){
           <li>👥 Add your contestants and send their personalised invite links.</li>
           <li>📅 Wait for RSVPs as each player locks in a unique hosting date.</li>
         </ol>
-        <p style={{marginTop:10}}>Once the line-up is complete, review the schedule and hit <strong>Start Competition</strong> to launch your Quest. You’ll oversee every round, keep the scores honest, and unveil the final results — crowning the ultimate Culinary Conquistador!</p>
-        <p style={{marginTop:10}}>💡 Optional twist: Add a little suspense (and motivation) by inviting each player to contribute equally towards a grand prize for the champion. What the prize is — that’s your secret ingredient!</p>
+        <p style={{marginTop:10}}>Once the line-up is complete, review the schedule and hit <strong>Start Competition</strong> to launch your Quest.</p>
+        <p style={{marginTop:10}}>💡 Optional twist: invite each player to contribute equally towards a grand prize.</p>
         <p style={{marginTop:10}}>Now tell us your name and let’s begin.</p>
       </div>
       <div className="row" style={{marginTop:8,justifyContent:'center'}}>
-        <input inputmode="text" autocomplete="off" placeholder="Your name" value={organiserName} onInput={onInputVal(setOrganiserName)} style={{maxWidth:420}}/>
+        <input inputmode="text" autocomplete="off" placeholder="Your name" ref={organiserRef} style={{maxWidth:420}}/>
       </div>
       <div className="actions">
         <button className="btn btn-success btn-lg" onClick={()=>{
-          if(!organiserName.trim()){ showToast('Please enter your name'); return; }
-          // set first contestant name now
-          setContestants(prev=>{ const p=[...prev]; p[0]=organiserName.trim(); return p; });
+          const name = (organiserRef.current?.value||'').trim();
+          if(!name){ showToast('Please enter your name'); return; }
+          setContestants(prev=>{ const p=[...prev]; p[0]=name; return p; });
           setSetupStep(2);
         }}>Continue</button>
         <button className="btn btn-danger btn-lg" onClick={()=>setShowCancel(true)}>Cancel</button>
@@ -489,15 +428,22 @@ function App(){
           <h3 style={{marginBottom:6}}>Select categories</h3>
           <div className="cat-grid">
             {categories.map(cat=>(
-              <CategoryRow key={cat.name} cat={cat} locked={!!cat.locked} onToggle={toggleCategory}/>
+              <label key={cat.name} className="cat-chip" style={{opacity: cat.locked? .85 : 1}}>
+                <input type="checkbox" disabled={cat.locked} checked={!!cat.enabled} onChange={()=>toggleCategory(cat.name)} />
+                <span style={{flex:1}}>{cat.name}{cat.locked && <span className="lock"> (compulsory)</span>}</span>
+              </label>
             ))}
             {customCats.map(cat=>(
-              <CategoryRow key={cat.name} cat={cat} onToggle={toggleCustomCategory} onRemove={()=>removeCustomCategory(cat.name)}/>
+              <label key={cat.name} className="cat-chip">
+                <input type="checkbox" checked={!!cat.enabled} onChange={()=>toggleCustomCategory(cat.name)} />
+                <span style={{flex:1}}>{cat.name}</span>
+                <button type="button" className="btn-ghost" onClick={()=>removeCustomCategory(cat.name)}>Remove</button>
+              </label>
             ))}
           </div>
           <div className="row" style={{marginTop:10}}>
-            <input placeholder={customLeft?`Add custom category (${customLeft} left)`:'Custom category limit reached'} value={newCustomCat} onInput={onInputVal(setNewCustomCat)} disabled={!customLeft}/>
-            <button className="btn btn-ghost" onClick={addCustomCategory} disabled={!customLeft || !newCustomCat.trim()}>Add</button>
+            <input placeholder={customLeft?`Add custom category (${customLeft} left)`:'Custom category limit reached'} ref={newCustomRef} disabled={!customLeft}/>
+            <button className="btn btn-ghost" onClick={addCustomCategory} disabled={!customLeft}>Add</button>
           </div>
           <div className="muted" style={{marginTop:6}}>Enabled: <strong>{enabledCount}</strong> / 4 total</div>
         </div>
@@ -519,7 +465,7 @@ function App(){
       <div className="list" style={{marginTop:10}}>
         {contestants.map((n,i)=>(
           <div key={i} className="list-item">
-            <div><strong>{i+1}. {i===0 ? (organiserName||'') : n}</strong>{i===0 && <span className="badge">You</span>}</div>
+            <div><strong>{i+1}. {i===0 ? (contestants[0]||'') : n}</strong>{i===0 && <span className="badge">You</span>}</div>
             <div>
               <button className="btn btn-ghost" onClick={()=>removeGuest(i)} disabled={i===0}>{i===0?'—':'Remove'}</button>
             </div>
@@ -528,8 +474,8 @@ function App(){
       </div>
 
       <div className="row" style={{marginTop:6}}>
-        <input placeholder="Guest name" value={newGuest} onInput={onInputVal(setNewGuest)}/>
-        <button className="btn btn-ghost" onClick={addGuest} disabled={!newGuest.trim()}>+ Add</button>
+        <input placeholder="Guest name" ref={newGuestRef}/>
+        <button className="btn btn-ghost" onClick={addGuest}>+ Add</button>
       </div>
 
       <div className="actions">
@@ -548,7 +494,7 @@ function App(){
       <div className="list" style={{marginTop:10}}>
         {contestants.map((n,i)=>(
           <div key={i} className="list-item" style={{alignItems:'center'}}>
-            <div><strong>{i===0 ? organiserName : n}</strong>{i===0 && <span className="badge">You</span>}</div>
+            <div><strong>{n}</strong>{i===0 && <span className="badge">You</span>}</div>
             <button className="btn btn-ghost" onClick={async ()=>{
               try { await navigator.clipboard.writeText(inviteLink(gameId, i)); showToast(window.COPY.organiser.link_copied); }
               catch { showToast('Copy failed — long-press to copy', 1800); }
@@ -559,7 +505,9 @@ function App(){
 
       <div className="actions">
         <button className="btn btn-success btn-lg" onClick={async ()=>{
-          try { await commitRSVPDoc(); setSetupStep(5); setPhase('rsvp'); }
+          const name = (contestants[0]||'').trim();
+          if(!name){ showToast('Your name is required'); return; }
+          try { await commitRSVPDoc(name); setSetupStep(5); }
           catch(e){ console.error(e); showToast('Could not save. Try again.'); }
         }}>Completed sending links</button>
         <button className="btn btn-danger btn-lg" onClick={()=>setShowCancel(true)}>Cancel</button>
@@ -574,7 +522,7 @@ function App(){
       <p className="subtitle">Once everyone has accepted with a unique date, you can begin.</p>
 
       <div className="list" style={{marginTop:10}}>
-        {(p.length? p : [organiserName, ...contestants.slice(1)]).map((n,i)=>(
+        {(p.length? p : contestants).map((n,i)=>(
           <div key={i} className="list-item">
             <div>
               <div><strong>{n}</strong>{i===0 && <span className="badge">You</span>}</div>
@@ -599,8 +547,8 @@ function App(){
     </div>
   );
 
-  // RSVP view for players if phase=rsvp and viewer not accepted
-  if(phase==='rsvp' && new URLSearchParams(location.search).get('game')){
+  // RSVP join view
+  if(phase==='rsvp' && qs.get('game')){
     const cId = myContestantId;
     if(cId!=null && rsvp[cId]!==1){
       const disabledForMe= new Set(Object.entries(d).filter(([k,v])=> +k!==cId && v).map(([_,v])=>v));
@@ -615,24 +563,23 @@ function App(){
             <Calendar selectedDate={d[cId]} onSelect={(iso)=>{
               if(Object.values(d).some((v, k)=> v===iso && +k!==cId)){ showToast('That date is already chosen'); return; }
               const nd={...d, [cId]:iso}; const nt={...t}; if(myTime) nt[cId]=myTime; else delete nt[cId];
-              setD(nd); setT(nt); persistPatch(new URLSearchParams(location.search).get('game'), { d:nd, t:nt });
+              setD(nd); setT(nt); persistPatch(qs.get('game'), { d:nd, t:nt });
               showToast(window.COPY.player.hosting_date_chosen);
             }} disabledDates={disabledForMe} minDate={today}/>
             <div style={{marginTop:12}}>
               <label className="muted" style={{display:'block',marginBottom:6}}>Optional time</label>
-              <input type="time" value={myTime} onInput={(e)=>{ const tm=e.target.value||undefined; const nt={...t}; if(tm) nt[cId]=tm; else delete nt[cId]; setT(nt); persistPatch(new URLSearchParams(location.search).get('game'), { t:nt }); }}/>
+              <input type="time" value={myTime} onChange={(e)=>{ const tm=e.target.value||undefined; const nt={...t}; if(tm) nt[cId]=tm; else delete nt[cId]; setT(nt); persistPatch(qs.get('game'), { t:nt }); }}/>
             </div>
             <div className="row" style={{marginTop:12}}>
               <button className="btn btn-secondary" onClick={async ()=>{
-                const gid = new URLSearchParams(location.search).get('game');
                 if(!d[cId]){ showToast('Pick a date first'); return; }
                 const nr={...rsvp, [cId]:1}; setRsvp(nr);
-                await persistPatch(gid, { rsvp:nr });
-                const u=new URLSearchParams(location.search); u.set('game', gid); u.set('c', cId); history.replaceState({},'',`${location.pathname}?${u.toString()}`);
+                await persistPatch(qs.get('game'), { rsvp:nr });
+                const u=new URLSearchParams(location.search); u.set('game', qs.get('game')); u.set('c', cId); history.replaceState({},'',`${location.pathname}?${u.toString()}`);
                 showToast(window.COPY.player.invitation_accepted);
               }} disabled={!d[cId]}>✅ Accept Invitation</button>
-              <button className="btn btn-ghost" onClick={()=>{ const gid=new URLSearchParams(location.search).get('game'); const nd={...d}; delete nd[cId]; setD(nd); persistPatch(gid, { d:nd }); }}>Clear date</button>
-              <button className="btn btn-ghost" onClick={async ()=>{ const gid=new URLSearchParams(location.search).get('game'); const nd={...d}; delete nd[cId]; const nr={...rsvp,[cId]:-1}; setD(nd); setRsvp(nr); await persistPatch(gid,{ d:nd, rsvp:nr }); }}>Decline</button>
+              <button className="btn btn-ghost" onClick={()=>{ const nd={...d}; delete nd[cId]; setD(nd); persistPatch(qs.get('game'), { d:nd }); }}>Clear date</button>
+              <button className="btn btn-ghost" onClick={async ()=>{ const nd={...d}; delete nd[cId]; const nr={...rsvp,[cId]:-1}; setD(nd); setRsvp(nr); await persistPatch(qs.get('game'),{ d:nd, rsvp:nr }); }}>Decline</button>
             </div>
             {d[cId] && <div className="card" style={{background:'#fff8db',marginTop:12}}>Your chosen date: <strong>{fmtReadable(d[cId], myTime)}</strong></div>}
           </div>
@@ -640,7 +587,7 @@ function App(){
       );
     }
 
-    // Organiser tracker (pre-start)
+    // organiser tracker
     if(myContestantId===0){
       return (
         <div className="container">
@@ -660,8 +607,8 @@ function App(){
                     </div>
                   </div>
                   <div className="row">
-                    <button className="btn btn-ghost" onClick={()=>{ if(!confirm('Clear this player’s date?')) return; const gid=new URLSearchParams(location.search).get('game'); const nd={...d}; delete nd[i]; const nt={...t}; delete nt[i]; setD(nd); setT(nt); persistPatch(gid, { d:nd, t:nt }); }}>Clear</button>
-                    <button className="btn btn-ghost" onClick={async ()=>{ try{ await navigator.clipboard.writeText(inviteLink(new URLSearchParams(location.search).get('game'), i)); showToast(window.COPY.organiser.link_copied);}catch{ showToast('Copy failed',1200);} }}>Copy Invitation Link</button>
+                    <button className="btn btn-ghost" onClick={()=>{ if(!confirm('Clear this player’s date?')) return; const nd={...d}; delete nd[i]; const nt={...t}; delete nt[i]; setD(nd); setT(nt); persistPatch(qs.get('game'), { d:nd, t:nt }); }}>Clear</button>
+                    <button className="btn btn-ghost" onClick={async ()=>{ try{ await navigator.clipboard.writeText(inviteLink(qs.get('game'), i)); showToast(window.COPY.organiser.link_copied);}catch{ showToast('Copy failed',1200);} }}>Copy Invitation Link</button>
                   </div>
                 </div>
               ))}
@@ -689,11 +636,11 @@ function App(){
 
     const [scoreSimple, setScoreSimple] = useState('');
     const [scoreCats, setScoreCats] = useState({});
-    const [comment, setComment] = useState('');
+    const commentRef = useRef(null);
 
     const submitScore= async ()=>{
       if(myId===hostIdx){ showToast(window.COPY.player.host_cannot_score, 1600); return; }
-      const gid=new URLSearchParams(location.search).get('game');
+      const gid=qs.get('game');
       const snap = await get(child(ref(db()), `games/${gid}`)); const cur = snap.exists()? snap.val(): {};
       const nextSc = cur.sc || {};
       if(smode==='s'){
@@ -704,9 +651,9 @@ function App(){
         const o = Math.round((Object.values(vals).reduce((a,b)=>a+b,0)/cats.length)*10)/10;
         nextSc[hostIdx] = nextSc[hostIdx] || {}; nextSc[hostIdx][myId] = { c:vals, o };
       }
-      const nextCm = cur.cm || {}; nextCm[hostIdx] = nextCm[hostIdx] || {}; nextCm[hostIdx][myId] = comment||'';
+      const nextCm = cur.cm || {}; nextCm[hostIdx] = nextCm[hostIdx] || {}; nextCm[hostIdx][myId] = (commentRef.current?.value||'');
       await update(r(`games/${gid}`), { sc: nextSc, cm: nextCm });
-      setScoreSimple(''); setScoreCats({}); setComment('');
+      setScoreSimple(''); setScoreCats({}); if(commentRef.current) commentRef.current.value='';
       showToast(window.COPY.player.score_submitted);
     };
 
@@ -719,7 +666,7 @@ function App(){
     };
 
     const nextRound = async ()=>{
-      const gid=new URLSearchParams(location.search).get('game');
+      const gid=qs.get('game');
       if(rd < p.length-1){ await update(r(`games/${gid}`), { rd: rd+1 }); setRd(rd+1); showToast(window.COPY.organiser.next_round); }
       else { await update(r(`games/${gid}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }
     };
@@ -748,8 +695,8 @@ function App(){
                 m.sm==='s' ? (
                   <div className="card" style={{background:'#fef3c7',marginTop:12}}>
                     <h3>Score {hostName}</h3>
-                    <div style={{marginTop:8}}><label className="muted">Your score (0–10)</label><input inputmode="numeric" type="number" min="0" max="10" value={scoreSimple} onInput={onInputVal(setScoreSimple)} /></div>
-                    <div style={{marginTop:8}}><label className="muted">Comment (optional)</label><textarea rows="3" value={comment} onInput={onInputVal(setComment)} /></div>
+                    <div style={{marginTop:8}}><label className="muted">Your score (0–10)</label><input inputmode="numeric" type="number" min="0" max="10" value={scoreSimple} onChange={e=>setScoreSimple(e.target.value)} /></div>
+                    <div style={{marginTop:8}}><label className="muted">Comment (optional)</label><textarea rows="3" ref={commentRef} /></div>
                     <div style={{marginTop:8}}><button className="btn btn-secondary" onClick={submitScore} disabled={scoreSimple===''||Number.isNaN(parseInt(scoreSimple,10))}>Submit Score</button></div>
                   </div>
                 ) : (
@@ -760,11 +707,11 @@ function App(){
                       { (m.cats||['Food']).map(cat=>(
                         <div key={cat} style={{marginTop:8}}>
                           <label className="muted">{cat}</label>
-                          <input inputmode="numeric" type="number" min="0" max="10" value={scoreCats[cat]??''} onInput={(e)=>setScoreCats(prev=>({...prev,[cat]:e.target.value}))}/>
+                          <input inputmode="numeric" type="number" min="0" max="10" value={scoreCats[cat]??''} onChange={e=>setScoreCats(prev=>({...prev,[cat]:e.target.value}))}/>
                         </div>
                       ))}
                     </div>
-                    <div style={{marginTop:8}}><label className="muted">Comment (optional)</label><textarea rows="3" value={comment} onInput={onInputVal(setComment)} /></div>
+                    <div style={{marginTop:8}}><label className="muted">Comment (optional)</label><textarea rows="3" ref={commentRef} /></div>
                     <div style={{marginTop:8}}><button className="btn btn-secondary" onClick={submitScore}>Submit Category Scores</button></div>
                   </div>
                 )
@@ -787,7 +734,7 @@ function App(){
                   return done ? (
                     rd < p.length-1
                       ? <button className="btn btn-success" onClick={nextRound}>Next Dinner Party →</button>
-                      : <button className="btn btn-danger" onClick={async ()=>{ const gid=new URLSearchParams(location.search).get('game'); await update(r(`games/${gid}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }}>🏆 View Final Results</button>
+                      : <button className="btn btn-danger" onClick={async ()=>{ await update(r(`games/${qs.get('game')}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }}>🏆 View Final Results</button>
                   ) : <div className="muted">Wait for all scores before progressing.</div>;
                 })()}
               </div>
@@ -844,49 +791,33 @@ function App(){
           </div>
 
           <div style={{marginTop:12}}>
-            {myContestantId===0 ? (
-              <button className="btn btn-secondary" onClick={async ()=>{ if(!confirm('Start a new competition?')) return; await remove(r(`games/${gameId}`)); location.href=baseUrl(); }}>{window.COPY.results.start_new_competition}</button>
-            ) : (
-              <div style={{textAlign:'center',padding:10,background:'#f3f4f6',borderRadius:8}}><p className="muted">{window.COPY.results.share_results}</p></div>
-            )}
+            <button className="btn btn-secondary" onClick={async ()=>{ if(!confirm('Start a new competition?')) return; await remove(r(`games/${qs.get('game')}`)); location.href=baseUrl(); }}>{window.COPY.results.start_new_competition}</button>
           </div>
         </div>
       </div>
     );
   }
 
-  // Wizard or Splash
+  // Wizard
   return (
     <div className="container">
-      {phase==='splash' ? (
-        <div className="splash-wrap">
-          <div className="card splash-card">
-            <Logo/>
-            <h1 className="title">Culinary Quest</h1>
-            <p className="splash-quote">{window.randomSplash()}</p>
-            <p className="subtitle" style={{marginTop:8}}>Loading your Culinary Quest…</p>
+      {setupStep===1 && <Screen1/>}
+      {setupStep===2 && <Screen2/>}
+      {setupStep===3 && <Screen3/>}
+      {setupStep===4 && <Screen4/>}
+      {setupStep===5 && <Screen5/>}
+
+      {showCancel && (
+        <div className="overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h3>Cancel setup?</h3>
+            <p className="muted">Are you sure you want to cancel? All progress will be lost.</p>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={()=>setShowCancel(false)}>Keep editing</button>
+              <button className="btn btn-danger" onClick={doCancel}>Yes, cancel</button>
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          {setupStep===1 && <Screen1/>}
-          {setupStep===2 && <Screen2/>}
-          {setupStep===3 && <Screen3/>}
-          {setupStep===4 && <Screen4/>}
-          {setupStep===5 && <Screen5/>}
-          {showCancel && (
-            <div className="overlay" role="dialog" aria-modal="true">
-              <div className="modal">
-                <h3>Cancel setup?</h3>
-                <p className="muted">Are you sure you want to cancel? All progress will be lost.</p>
-                <div className="modal-actions">
-                  <button className="btn btn-ghost" onClick={()=>setShowCancel(false)}>Keep editing</button>
-                  <button className="btn btn-danger" onClick={doCancel}>Yes, cancel</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
       )}
     </div>
   );
