@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Culinary Quest — Full Flow (Stable Inputs + Stable Phase)</title>
+<title>Culinary Quest — Wizard + RSVP Confirmation (Stable)</title>
 
 <!-- React + Babel -->
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
@@ -82,6 +82,7 @@
   .modal h3{margin-bottom:6px}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
   .logo{width:100px;height:100px;margin:10px auto 0;display:block}
+  /* Calendar */
   .calendar{width:100%;max-width:420px;margin:.75rem auto 0;}
   .cal-header{display:flex;justify-content:space-between;align-items:center;padding:.5rem;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:.5rem;}
@@ -90,6 +91,11 @@
   .cal-day.available{background:#fff;cursor:pointer;border:1px solid #e5e7eb;}
   .cal-day.selected{background:#ea580c;color:#fff;font-weight:700;}
   .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:6px 0;color:#6b7280;font-size:.85rem;text-align:center;}
+
+  /* RSVP Accepted screen */
+  .accepted-wrap{min-height:calc(100vh - 32px);display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(250,204,21,0.18));border-radius:14px}
+  .accepted-card{max-width:560px;text-align:center}
+  .slogan{margin-top:10px;font-weight:700;color:#7c5a00;background:#fff8db;border:2px solid #f59e0b;border-radius:12px;padding:.7rem .9rem;opacity:.95}
 </style>
 </head>
 <body>
@@ -114,7 +120,7 @@
       all_dates_set: "📅 Schedule locked and loaded — it’s almost showtime!",
       game_started: "🎬 And we’re live! Round One of the Quest begins now.",
       next_round: "🍷 On to the next host — keep those scores coming!",
-      all_scores_in: "🏁 Scores complete! Ready to reveal the Culinary Conquistador?",
+      all_scores_in: "🏁 Scores complete! Ready to reveal the Culinary Conquistador!",
       competition_ended: "🎉 What a feast! Time to announce your champion.",
       prize_reminder: "💡 Don’t forget — the winner takes the mystery reward!"
     },
@@ -148,9 +154,9 @@ const { ref, onValue, set, remove, get, child, update } = window.__CQ_fb;
 
 const db = ()=> window.__CQ_DB__;
 const r = (path)=> ref(db(), path);
+const baseUrl = ()=> location.href.split('?')[0];
 const qs = new URLSearchParams(location.search);
 const hasGameParam = qs.has('game');
-const baseUrl = ()=> location.href.split('?')[0];
 const makeGameId = ()=> 'cq_' + Math.random().toString(36).slice(2,9);
 const inviteLink = (gid, idx)=> `${baseUrl()}?game=${gid}&c=${idx}`;
 const fmtISO = (d)=>{ const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
@@ -204,17 +210,18 @@ function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }
 }
 
 function App(){
-  // PHASE: set once, based on URL. No timer that can override later.
-  const initialPhase = hasGameParam ? 'rsvp' : 'wizard';
+  // Session lock
+  const savedSession = (()=>{ try{return JSON.parse(localStorage.getItem('cq_active_game')||'{}');}catch{return{}} })();
+  const initialPhase = (hasGameParam || savedSession.gameId) ? 'rsvp' : 'wizard';
   const [phase, setPhase] = useState(initialPhase);
 
   // Wizard state
   const [setupStep, setSetupStep] = useState(1);
-  const organiserRef = useRef(null);        // uncontrolled
+  const organiserRef = useRef(null);
   const newGuestRef = useRef(null);
   const newCustomRef = useRef(null);
 
-  const [gameId, setGameId] = useState(hasGameParam ? qs.get('game') : makeGameId());
+  const [gameId, setGameId] = useState(hasGameParam ? qs.get('game') : (savedSession.gameId || makeGameId()));
   const [scoringMode, setScoringMode] = useState('simple');
   const [categories, setCategories] = useState([
     { name:'Food', enabled:true, locked:true },
@@ -224,11 +231,13 @@ function App(){
     { name:'Entertainment', enabled:false }
   ]);
   const [customCats, setCustomCats] = useState([]);
-  const [contestants, setContestants] = useState(['']); // index 0 is organiser name
+  const [contestants, setContestants] = useState(['']);
   const [showCancel, setShowCancel] = useState(false);
 
   // Live state
-  const [myContestantId, setMyContestantId] = useState(qs.has('c') ? parseInt(qs.get('c'),10) : null);
+  const [myContestantId, setMyContestantId] = useState(
+    hasGameParam ? parseInt(qs.get('c')||savedSession.contestantId||'0',10) : (savedSession.contestantId ?? null)
+  );
   const [st, setSt] = useState(ST.SETUP);
   const [p, setP] = useState([]);
   const [rsvp, setRsvp] = useState({});
@@ -241,10 +250,10 @@ function App(){
   const [cm, setCm] = useState({});
   const unsubRef = useRef(null);
 
-  // Subscribe if joining via link
+  // Subscribe if in a game
   useEffect(()=>{
-    if(!hasGameParam || !window.__CQ_FB_READY__) return;
-    const gid = qs.get('game');
+    if(!(hasGameParam || savedSession.gameId) || !window.__CQ_FB_READY__) return;
+    const gid = hasGameParam ? qs.get('game') : savedSession.gameId;
     if(unsubRef.current) try{ unsubRef.current(); }catch(_){}
     unsubRef.current = onValue(r(`games/${gid}`),(snap)=>{
       if(!snap.exists()) return;
@@ -261,7 +270,7 @@ function App(){
       setCm(x.cm||{});
       if(x.st===ST.STARTED) setPhase('game');
       else if(x.st===ST.RES) setPhase('results');
-      else setPhase('rsvp'); // lock in RSVP; never flip back to wizard
+      else setPhase('rsvp');
     });
   },[]);
 
@@ -309,14 +318,16 @@ function App(){
     const next=contestants.filter((_,i)=>i!==idx); setContestants(next);
   };
 
+  // Cancel / End
   const doCancel = async ()=>{
     setShowCancel(false);
     try{ if(window.__CQ_FB_READY__) await remove(r(`games/${gameId}`)); }catch(_){}
+    localStorage.removeItem('cq_active_game');
     showToast('👋 Come back soon!');
     setTimeout(()=>{ location.href = baseUrl(); }, 900);
   };
 
-  // Commit RSVP doc at end of Step 4
+  // Commit RSVP doc
   async function commitRSVPDoc(organiserName){
     if(!window.__CQ_FB_READY__){ showToast('Please check your connection'); throw new Error('fb not ready'); }
     const parts = [organiserName || 'Host', ...contestants.slice(1).filter(Boolean)];
@@ -337,6 +348,8 @@ function App(){
       sc: {}, cm: {}
     };
     await set(r(`games/${gameId}`), payload);
+    // session lock as organiser
+    localStorage.setItem('cq_active_game', JSON.stringify({ gameId, contestantId: 0 }));
     const u=new URLSearchParams(location.search); u.set('game', gameId); u.set('c', 0);
     history.replaceState({},'',`${location.pathname}?${u.toString()}`);
     setMyContestantId(0);
@@ -362,10 +375,13 @@ function App(){
     const initSc={}; const initCm={};
     p.forEach((_,h)=>{ initSc[h]={}; initCm[h]={}; p.forEach((__,s)=>{ if(s!==h){ initSc[h][s] = (smode==='s' ? null : { c:Object.fromEntries(cats.map(k=>[k,null])), o:null }); initCm[h][s]=''; } }); });
     await update(r(`games/${gameId}`), { st:ST.STARTED, rd:0, ord:order, sc:initSc, cm:initCm });
-    setSt(ST.STARTED); setRd(0); setOrd(order); setSc(initSc); setCm(initCm); setPhase('game');
+    setSt(ST.STARTED); setRd(0); setOrd(order); setSc(initSc); setCm(initCm);
+    localStorage.setItem('cq_active_game', JSON.stringify({ gameId, contestantId: 0 }));
+    setPhase('game');
     showToast(window.COPY.organiser.game_started);
   };
 
+  // Voting window
   const votingUnlock = (hostIdx)=>{
     const iso=d[hostIdx]; if(!iso) return null;
     const tm=t[hostIdx]; const sched=new Date(`${iso}T${tm?tm:'00:00'}`);
@@ -374,7 +390,7 @@ function App(){
   };
   const isVotingOpen = (hostIdx)=>{ const u=votingUnlock(hostIdx); return !u || new Date()>=u; };
 
-  // Screens
+  // Screens (wizard)
   const Screen1 = ()=>(
     <div className="card fade">
       <Logo/>
@@ -547,9 +563,47 @@ function App(){
     </div>
   );
 
+  // RSVP Accepted Confirmation Screen (guest)
+  function RSVPAcceptedScreen({ organiser, dateIso, timeStr }){
+    const [slogan, setSlogan] = useState(()=>{
+      const a=window.COPY?.splash||[]; return a[Math.floor(Math.random()*a.length)]||'';
+    });
+    useEffect(()=>{
+      const a=window.COPY?.splash||[];
+      const iv = setInterval(()=>{ if(a.length){ setSlogan(a[Math.floor(Math.random()*a.length)]); } }, 36000); // 36s
+      return ()=> clearInterval(iv);
+    },[]);
+    return (
+      <div className="container">
+        <div className="accepted-wrap">
+          <div className="card accepted-card fade">
+            <Logo/>
+            <h2 className="title">🎉 You’re all set!</h2>
+            <p className="subtitle">Your hosting date: <strong>{fmtReadable(dateIso, timeStr)}</strong></p>
+            <div className="card" style={{marginTop:8}}>
+              <p>When all participants have responded, <strong>{organiser}</strong> will progress the game status to <strong>“Let’s Go!”</strong>.</p>
+              <p className="muted" style={{marginTop:6}}>Sit tight — your Culinary Quest will begin soon 🍽️</p>
+            </div>
+            <div className="actions">
+              <button className="btn btn-success btn-lg" onClick={()=>{ /* stays */ }}>OK</button>
+            </div>
+            <div className="slogan">{slogan}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // RSVP join view
-  if(phase==='rsvp' && qs.get('game')){
-    const cId = myContestantId;
+  if(phase==='rsvp' && (hasGameParam || savedSession.gameId)){
+    const gid = hasGameParam ? qs.get('game') : savedSession.gameId;
+    const cId = myContestantId ?? savedSession.contestantId ?? null;
+
+    // If accepted → show confirmation
+    if(cId!=null && rsvp[cId]===1){
+      return <RSVPAcceptedScreen organiser={p[0]||'Organiser'} dateIso={d[cId]} timeStr={t[cId]} />;
+    }
+
     if(cId!=null && rsvp[cId]!==1){
       const disabledForMe= new Set(Object.entries(d).filter(([k,v])=> +k!==cId && v).map(([_,v])=>v));
       const today=new Date(); today.setHours(0,0,0,0);
@@ -563,23 +617,24 @@ function App(){
             <Calendar selectedDate={d[cId]} onSelect={(iso)=>{
               if(Object.values(d).some((v, k)=> v===iso && +k!==cId)){ showToast('That date is already chosen'); return; }
               const nd={...d, [cId]:iso}; const nt={...t}; if(myTime) nt[cId]=myTime; else delete nt[cId];
-              setD(nd); setT(nt); persistPatch(qs.get('game'), { d:nd, t:nt });
+              setD(nd); setT(nt); persistPatch(gid, { d:nd, t:nt });
               showToast(window.COPY.player.hosting_date_chosen);
             }} disabledDates={disabledForMe} minDate={today}/>
             <div style={{marginTop:12}}>
               <label className="muted" style={{display:'block',marginBottom:6}}>Optional time</label>
-              <input type="time" value={myTime} onChange={(e)=>{ const tm=e.target.value||undefined; const nt={...t}; if(tm) nt[cId]=tm; else delete nt[cId]; setT(nt); persistPatch(qs.get('game'), { t:nt }); }}/>
+              <input type="time" value={myTime} onChange={(e)=>{ const tm=e.target.value||undefined; const nt={...t}; if(tm) nt[cId]=tm; else delete nt[cId]; setT(nt); persistPatch(gid, { t:nt }); }}/>
             </div>
             <div className="row" style={{marginTop:12}}>
               <button className="btn btn-secondary" onClick={async ()=>{
                 if(!d[cId]){ showToast('Pick a date first'); return; }
                 const nr={...rsvp, [cId]:1}; setRsvp(nr);
-                await persistPatch(qs.get('game'), { rsvp:nr });
-                const u=new URLSearchParams(location.search); u.set('game', qs.get('game')); u.set('c', cId); history.replaceState({},'',`${location.pathname}?${u.toString()}`);
+                await persistPatch(gid, { rsvp:nr });
+                const u=new URLSearchParams(location.search); u.set('game', gid); u.set('c', cId); history.replaceState({},'',`${location.pathname}?${u.toString()}`);
+                localStorage.setItem('cq_active_game', JSON.stringify({ gameId: gid, contestantId: cId })); // lock session
                 showToast(window.COPY.player.invitation_accepted);
               }} disabled={!d[cId]}>✅ Accept Invitation</button>
-              <button className="btn btn-ghost" onClick={()=>{ const nd={...d}; delete nd[cId]; setD(nd); persistPatch(qs.get('game'), { d:nd }); }}>Clear date</button>
-              <button className="btn btn-ghost" onClick={async ()=>{ const nd={...d}; delete nd[cId]; const nr={...rsvp,[cId]:-1}; setD(nd); setRsvp(nr); await persistPatch(qs.get('game'),{ d:nd, rsvp:nr }); }}>Decline</button>
+              <button className="btn btn-ghost" onClick={()=>{ const nd={...d}; delete nd[cId]; setD(nd); persistPatch(gid, { d:nd }); }}>Clear date</button>
+              <button className="btn btn-ghost" onClick={async ()=>{ const nd={...d}; delete nd[cId]; const nr={...rsvp,[cId]:-1}; setD(nd); setRsvp(nr); await persistPatch(gid,{ d:nd, rsvp:nr }); }}>Decline</button>
             </div>
             {d[cId] && <div className="card" style={{background:'#fff8db',marginTop:12}}>Your chosen date: <strong>{fmtReadable(d[cId], myTime)}</strong></div>}
           </div>
@@ -588,7 +643,7 @@ function App(){
     }
 
     // organiser tracker
-    if(myContestantId===0){
+    if((myContestantId??savedSession.contestantId)===0){
       return (
         <div className="container">
           <h1 className="title">🍽️ Culinary Quest</h1>
@@ -607,8 +662,8 @@ function App(){
                     </div>
                   </div>
                   <div className="row">
-                    <button className="btn btn-ghost" onClick={()=>{ if(!confirm('Clear this player’s date?')) return; const nd={...d}; delete nd[i]; const nt={...t}; delete nt[i]; setD(nd); setT(nt); persistPatch(qs.get('game'), { d:nd, t:nt }); }}>Clear</button>
-                    <button className="btn btn-ghost" onClick={async ()=>{ try{ await navigator.clipboard.writeText(inviteLink(qs.get('game'), i)); showToast(window.COPY.organiser.link_copied);}catch{ showToast('Copy failed',1200);} }}>Copy Invitation Link</button>
+                    <button className="btn btn-ghost" onClick={()=>{ if(!confirm('Clear this player’s date?')) return; const nd={...d}; delete nd[i]; const nt={...t}; delete nt[i]; setD(nd); setT(nt); persistPatch(gid, { d:nd, t:nt }); }}>Clear</button>
+                    <button className="btn btn-ghost" onClick={async ()=>{ try{ await navigator.clipboard.writeText(inviteLink(gid, i)); showToast(window.COPY.organiser.link_copied);}catch{ showToast('Copy failed',1200);} }}>Copy Invitation Link</button>
                   </div>
                 </div>
               ))}
@@ -627,7 +682,7 @@ function App(){
     const hostIdx = (ord && ord.length) ? ord[rd] : rd;
     const hostName = p[hostIdx] || '';
     const smode = m.sm; const cats = m.cats || ['Food'];
-    const myId = myContestantId;
+    const myId = myContestantId ?? savedSession.contestantId;
     const myScore = sc?.[hostIdx]?.[myId];
     const scoredCount = Object.values(sc?.[hostIdx]||{}).filter(s=>{
       if(s==null) return false;
@@ -639,8 +694,8 @@ function App(){
     const commentRef = useRef(null);
 
     const submitScore= async ()=>{
+      const gid = (hasGameParam ? qs.get('game') : savedSession.gameId);
       if(myId===hostIdx){ showToast(window.COPY.player.host_cannot_score, 1600); return; }
-      const gid=qs.get('game');
       const snap = await get(child(ref(db()), `games/${gid}`)); const cur = snap.exists()? snap.val(): {};
       const nextSc = cur.sc || {};
       if(smode==='s'){
@@ -659,16 +714,17 @@ function App(){
 
     const unlock = votingUnlock(hostIdx);
     const open = isVotingOpen(hostIdx);
+
+    const nextRound = async ()=>{
+      const gid=(hasGameParam ? qs.get('game') : savedSession.gameId);
+      if(rd < p.length-1){ await update(r(`games/${gid}`), { rd: rd+1 }); setRd(rd+1); showToast(window.COPY.organiser.next_round); }
+      else { await update(r(`games/${gid}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }
+    };
+
     const everyoneScored = ()=>{
       const vals = Object.entries(sc?.[hostIdx]||{}).filter(([sid,_])=> +sid!==hostIdx).map(([_,v])=>v);
       if(!vals.length) return false;
       return vals.every(v=> (typeof v==='number') || (v && typeof v==='object' && v.o!=null));
-    };
-
-    const nextRound = async ()=>{
-      const gid=qs.get('game');
-      if(rd < p.length-1){ await update(r(`games/${gid}`), { rd: rd+1 }); setRd(rd+1); showToast(window.COPY.organiser.next_round); }
-      else { await update(r(`games/${gid}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }
     };
 
     return (
@@ -719,24 +775,21 @@ function App(){
             </>
           )}
 
-          { myContestantId===hostIdx && <div className="card" style={{background:'#fff8db',marginTop:12}}>🍽️ You’re tonight’s host — you don’t score yourself.</div> }
+          { (myContestantId??savedSession.contestantId)===hostIdx && <div className="card" style={{background:'#fff8db',marginTop:12}}>🍽️ You’re tonight’s host — you don’t score yourself.</div> }
 
-          { myContestantId===0 ? (
+          { (myContestantId??savedSession.contestantId)===0 ? (
             <div style={{marginTop:12}}>
               <h4>Scoring Status</h4>
               {p.map((n,i)=> i===hostIdx? null :
                 <div key={i} className="list-item">{n}<div>{ (typeof sc?.[hostIdx]?.[i]==='number') || (sc?.[hostIdx]?.[i]?.o!=null) ? '✅ Scored':'⏳ Pending'}</div></div>
               )}
               <div style={{marginTop:12}}>
-                { (()=>{
-                  const vals = Object.entries(sc?.[hostIdx]||{}).filter(([sid,_])=> +sid!==hostIdx).map(([_,v])=>v);
-                  const done = vals.length>0 && vals.every(v=> (typeof v==='number') || (v && typeof v==='object' && v.o!=null));
-                  return done ? (
-                    rd < p.length-1
+                { everyoneScored()
+                  ? (rd < p.length-1
                       ? <button className="btn btn-success" onClick={nextRound}>Next Dinner Party →</button>
-                      : <button className="btn btn-danger" onClick={async ()=>{ await update(r(`games/${qs.get('game')}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }}>🏆 View Final Results</button>
-                  ) : <div className="muted">Wait for all scores before progressing.</div>;
-                })()}
+                      : <button className="btn btn-danger" onClick={async ()=>{ const gid=(hasGameParam?qs.get('game'):savedSession.gameId); await update(r(`games/${gid}`), { st:ST.RES }); setSt(ST.RES); setPhase('results'); showToast(window.COPY.organiser.all_scores_in); }}>🏆 View Final Results</button>)
+                  : <div className="muted">Wait for all scores before progressing.</div>
+                }
               </div>
             </div>
           ) : (
@@ -791,7 +844,7 @@ function App(){
           </div>
 
           <div style={{marginTop:12}}>
-            <button className="btn btn-secondary" onClick={async ()=>{ if(!confirm('Start a new competition?')) return; await remove(r(`games/${qs.get('game')}`)); location.href=baseUrl(); }}>{window.COPY.results.start_new_competition}</button>
+            <button className="btn btn-secondary" onClick={async ()=>{ if(!confirm('Start a new competition?')) return; const gid=(hasGameParam?qs.get('game'):savedSession.gameId); await remove(r(`games/${gid}`)); localStorage.removeItem('cq_active_game'); location.href=baseUrl(); }}>{window.COPY.results.start_new_competition}</button>
           </div>
         </div>
       </div>
