@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Culinary Quest — Voting Lock + Toasts</title>
+  <title>Culinary Quest — Animations + Toasts (iOS friendly)</title>
 
-  <!-- React & Babel for quick local/demo usage -->
+  <!-- React & Babel (dev) -->
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -13,7 +13,7 @@
   <style>
     * { box-sizing: border-box; margin:0; padding:0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-family: -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       min-height:100vh;
       background: linear-gradient(135deg,#334155,#57534e,#1e293b);
       padding:1rem;
@@ -24,8 +24,7 @@
     .title { color:#fff; text-align:center; font-size:2rem; margin-bottom:.25rem; }
     .subtitle { color:#fff; text-align:center; margin-bottom:1rem; opacity:.95; }
 
-    /* keep input font-size >=16px to stop iOS zoom */
-    input, textarea { padding:.5rem; border-radius:8px; border:1px solid #e5e7eb; width:100%; font-size:16px; }
+    input, textarea { padding:.5rem; border-radius:8px; border:1px solid #e5e7eb; width:100%; font-size:16px; } /* >=16px prevents iOS zoom */
     textarea { min-height:64px; resize:vertical; }
 
     button { cursor:pointer; border:none; border-radius:8px; padding:.6rem 1rem; font-weight:600; }
@@ -53,7 +52,7 @@
     .badge { padding:.25rem .5rem; border-radius:6px; font-size:.8rem; color:#fff; background:#3b82f6; }
 
     .progress-bar { height:10px; background:#e5e7eb; border-radius:8px; overflow:hidden; margin-top:.5rem; }
-    .progress-fill { height:100%; background:#ea580c; transition:width .25s ease; }
+    .progress-fill { height:100%; background:#ea580c; transition: width .25s ease; }
 
     .wait-box { background:#dbeafe; border:1px solid #bfdbfe; padding:.75rem; border-radius:8px; color:#1e3a8a; margin-top:12px; text-align:center; }
 
@@ -62,22 +61,45 @@
     .timeline-card.current { background:#ea580c; color:#fff; border-color:#ea580c; }
     .timeline-card.complete { border-color:#10b981; }
 
-    /* modal */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
-    .modal { background:#fff; padding:1.5rem; border-radius:12px; max-width:420px; width:94%; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
+    /* modal (animated slower for iOS) */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000;
+      opacity:0;
+      animation: modalOverlayIn 0.4s ease-out forwards;
+    }
+    .modal {
+      background:#fff; padding:1.5rem; border-radius:12px; max-width:520px; width:94%; box-shadow:0 10px 30px rgba(0,0,0,0.3);
+      opacity:0; transform:translateY(18px);
+      animation: modalCardIn 0.4s ease-out forwards;
+    }
+    @keyframes modalOverlayIn { from { opacity:0 } to { opacity:1 } }
+    @keyframes modalCardIn { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
+
     .modal h3 { margin-bottom:.5rem; }
     .modal ul { list-style:none; margin:0; padding:0; }
     .modal li { margin:.25rem 0; }
     .modal-actions { display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem; }
 
-    /* toast */
+    /* toast (DOM helper will inject a .toast element) */
     .toast {
-      position:fixed; left:50%; transform:translateX(-50%); bottom:20px;
+      position:fixed; left:50%; transform:translateX(-50%); bottom:22px;
       background:rgba(17,24,39,0.95); color:#fff; padding:.6rem 1rem; border-radius:999px; box-shadow:0 8px 30px rgba(0,0,0,.32);
       z-index:1100; display:flex; align-items:center; gap:.6rem; font-weight:600;
+      opacity:0; transform: translateY(14px);
+      /* entry and exit handled by animation below */
     }
     .toast.success { background:#064e3b; }
     .toast.error { background:#7f1d1d; }
+
+    /* toast animations: in quick (0.3s), out over 0.45s starting after display duration (controlled by JS) */
+    @keyframes toastIn {
+      from { opacity:0; transform:translateY(18px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    @keyframes toastOut {
+      from { opacity:1; transform:translateY(0); }
+      to { opacity:0; transform:translateY(18px); }
+    }
 
     @media (max-width:900px) { .space-between { flex-direction:column; align-items:flex-start; gap:8px; } }
     @media (max-width:600px) { .calendar { max-width:100%; } .cal-day { height:36px; font-size:.85rem; } .timeline-card { min-width:130px; } }
@@ -86,14 +108,39 @@
 <body>
   <div id="root"></div>
 
+  <!-- Toast helper (global) -->
+  <script>
+    // showToast: creates DOM element and auto-removes after duration
+    (function(){
+      window.showToast = function(message = '', type = 'success', durationMs = 4000) {
+        try {
+          const el = document.createElement('div');
+          el.className = 'toast ' + (type === 'error' ? 'error' : 'success');
+          el.textContent = message;
+          document.body.appendChild(el);
+          // trigger entry
+          el.style.animation = 'toastIn 0.32s ease-out forwards';
+          // schedule exit after durationMs
+          setTimeout(() => {
+            el.style.animation = 'toastOut 0.45s ease-in forwards';
+            // remove after out animation
+            setTimeout(()=> { try { document.body.removeChild(el); } catch(e){} }, 460);
+          }, durationMs);
+        } catch (e) {
+          console.error('showToast error', e);
+        }
+      };
+    })();
+  </script>
+
   <script type="text/babel">
   const { useState, useEffect, useMemo, useRef } = React;
 
-  // storage shim (wraps localStorage)
+  // storage shim
   if (!window.storage) {
     window.storage = {
       async get(k) { const v = localStorage.getItem(k); return v ? { value: v } : null; },
-      async set(k, v) { localStorage.setItem(k, v); },
+      async set(k,v) { localStorage.setItem(k, v); },
       async delete(k) { localStorage.removeItem(k); }
     };
   }
@@ -115,8 +162,9 @@
     const timePart = time ? ' @ ' + d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '';
     return datePart + timePart;
   }
+  function avg(nums) { if (!nums || nums.length===0) return 0; return nums.reduce((a,b)=>a+b,0)/nums.length; }
 
-  // Calendar component (single-month)
+  // Calendar component
   function Calendar({ selectedDate, onSelect, disabledDates = new Set(), minDate }) {
     const today = new Date();
     const start = selectedDate ? new Date(selectedDate) : today;
@@ -149,14 +197,12 @@
       <div className="calendar card" aria-hidden={false}>
         <div className="cal-header">
           <button className="btn-ghost" onClick={prevMonth}>&larr;</button>
-          <div style={{fontWeight:700}}>{firstOfMonth.toLocaleString(undefined, { month:'long', year:'numeric' })}</div>
+          <div style={{fontWeight:700}}>{firstOfMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
           <button className="btn-ghost" onClick={nextMonth}>&rarr;</button>
         </div>
-
         <div className="cal-weekdays">
           {weekdayNames.map(w => <div key={w} style={{textAlign:'center'}}>{w}</div>)}
         </div>
-
         <div className="cal-grid">
           {cells.map((cell, idx) => {
             if (cell === null) return <div key={idx}></div>;
@@ -166,7 +212,11 @@
             const isSelected = selectedDate && formatDateISO(new Date(selectedDate)) === cellISO;
             const cls = isDisabled ? 'cal-day disabled' : (isSelected ? 'cal-day selected' : 'cal-day available');
             const handle = () => { if (!isDisabled) onSelect(cellISO); };
-            return <div key={idx} className={cls} onClick={handle} title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}>{cell.getDate()}</div>;
+            return (
+              <div key={idx} className={cls} onClick={handle} title={isDisabled ? (isPast ? 'Unavailable (past)' : 'Already chosen') : 'Select date'}>
+                {cell.getDate()}
+              </div>
+            );
           })}
         </div>
       </div>
@@ -176,7 +226,7 @@
   // Main app
   function CulinaryQuest() {
     // persisted state
-    const [gameState, setGameState] = useState('loading'); // setup | active | results
+    const [gameState, setGameState] = useState('loading'); // setup | active | terminated | results
     const [gameId, setGameId] = useState(null);
     const [contestants, setContestants] = useState([]);
     const [accepted, setAccepted] = useState({});
@@ -188,10 +238,22 @@
     const [currentRound, setCurrentRound] = useState(0);
     const [gameStarted, setGameStarted] = useState(false);
 
+    // scoring config
+    const [scoringMode, setScoringMode] = useState('simple'); // 'simple' | 'categories'
+    const defaultCategories = [
+      { name: 'Table Setting', enabled: false },
+      { name: 'Entertainment', enabled: false },
+      { name: 'Menu', enabled: false },
+      { name: 'Food', enabled: false },
+      { name: 'Drinks', enabled: false }
+    ];
+    const [categories, setCategories] = useState(defaultCategories);
+
     // UI state
     const [newContestantName, setNewContestantName] = useState('');
     const [myContestantId, setMyContestantId] = useState(null);
     const [tempScore, setTempScore] = useState('');
+    const [tempCategoryScores, setTempCategoryScores] = useState({}); // { categoryName: string/number }
     const [tempComment, setTempComment] = useState('');
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [showLinks, setShowLinks] = useState(false);
@@ -202,18 +264,11 @@
     const [showStartModal, setShowStartModal] = useState(false);
     const [scheduleText, setScheduleText] = useState([]);
 
-    // toast
-    const [toast, setToast] = useState(null); // { message, type }
-    const toastTimerRef = useRef(null);
+    // terminate modal
+    const [showTerminateModal, setShowTerminateModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const debounceRef = useRef(null);
-
-    // show toast helper
-    const showToast = (message, type='success') => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      setToast({ message, type });
-      toastTimerRef.current = setTimeout(() => setToast(null), 3000);
-    };
 
     // read URL params at start
     useEffect(() => {
@@ -225,10 +280,14 @@
         if (!isNaN(parsedC)) setMyContestantId(parsedC);
       }
       if (g) { setGameId(g); loadGame(g); }
-      else { const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9); setGameId(newId); setGameState('setup'); }
+      else {
+        const newId = 'culinaryquest_' + Math.random().toString(36).substr(2,9);
+        setGameId(newId);
+        setGameState('setup');
+      }
     }, []);
 
-    // safe loadGame — uses URL param to decide organizer vs guest routing
+    // loadGame (safe): populates scoringMode & categories if present, routes guests to RSVP by default
     const loadGame = async (g) => {
       try {
         setSaving(true);
@@ -245,6 +304,8 @@
           setComments(parsed.comments || {});
           setCurrentRound(parsed.currentRound || 0);
           setGameStarted(parsed.gameStarted || false);
+          setScoringMode(parsed.scoringMode || 'simple');
+          setCategories(parsed.categories || defaultCategories);
 
           // Determine isOrganizer using URL param (safe)
           const urlParams = new URLSearchParams(window.location.search);
@@ -255,29 +316,34 @@
           let nextState = 'setup';
           if (parsed.gameState) nextState = parsed.gameState;
           else if (parsed.contestants && parsed.contestants.length) nextState = isOrganizer ? 'setup' : 'active';
+
           setGameState(nextState);
-          showToast('Loaded game', 'success');
+          window.showToast('Loaded game', 'success', 1200);
         } else {
+          setScoringMode('simple');
+          setCategories(defaultCategories);
           setGameState('setup');
         }
       } catch (e) {
         console.error('loadGame error:', e);
         setGameState('setup');
-        showToast('Error loading game', 'error');
+        window.showToast('Error loading game', 'error', 1800);
       } finally {
         setSaving(false);
       }
     };
 
-    // saveGame persists state and shows toast on success or error
+    // saveGame persists state and shows toast on success or error (uses global showToast)
     const saveGame = async (patch = {}) => {
       setSaving(true);
       try {
         const data = {
           contestants, accepted, hostDates, hostTimes, hostingOrder,
           scores, comments, currentRound, gameStarted, gameState,
+          scoringMode, categories,
           ...patch
         };
+        // sync local states
         setContestants(data.contestants || contestants);
         setAccepted(data.accepted || accepted);
         setHostDates(data.hostDates || hostDates);
@@ -288,23 +354,25 @@
         setCurrentRound(data.currentRound ?? currentRound);
         setGameStarted(data.gameStarted ?? gameStarted);
         setGameState(data.gameState ?? gameState);
+        setScoringMode(data.scoringMode || scoringMode);
+        setCategories(data.categories || categories);
+
         await window.storage.set(gameId, JSON.stringify(data));
-        showToast('Saved ✓', 'success');
+        window.showToast('Saved ✓', 'success', 4000);
       } catch (e) {
         console.error('saveGame error', e);
-        showToast('Error ⚠️', 'error');
+        window.showToast('Error ⚠️', 'error', 4000);
       } finally {
         setSaving(false);
       }
     };
 
-    // debounced for frequent updates
     const saveGameDebounced = (patch = {}) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => saveGame(patch), 600);
     };
 
-    // add/remove participants
+    // add / remove contestants
     const addContestant = () => {
       if (!newContestantName.trim() || contestants.length >= 6) return;
       const updated = [...contestants, newContestantName.trim()];
@@ -357,7 +425,7 @@
     const getContestantLink = (i) => `${window.location.href.split('?')[0]}?game=${gameId}&c=${i}`;
     const copyLink = (i) => { navigator.clipboard.writeText(getContestantLink(i)); setCopiedIndex(i); setTimeout(()=>setCopiedIndex(null),2000); };
 
-    // RSVP & date selection validation
+    // RSVP & date selection
     const selectDateFor = (index, isoDate, time) => {
       try {
         const selectedDate = new Date(isoDate);
@@ -392,7 +460,7 @@
     const unacceptInvitation = (index) => { const a = {...accepted}; delete a[index]; setAccepted(a); saveGame({ accepted: a }); };
     const declineInvitation = (index) => { if (!confirm('Decline invitation? This will clear your date selection.')) return; const hd={...hostDates}; delete hd[index]; const a={...accepted}; delete a[index]; setHostDates(hd); setAccepted(a); saveGame({ hostDates: hd, accepted: a }); };
 
-    // organiser checks & ordering
+    // organiser checks & order
     const canOrganiserStart = () => {
       if (contestants.length < 2) return false;
       for (let i=0;i<contestants.length;i++) {
@@ -415,32 +483,48 @@
       return order;
     };
 
+    // start competition: lock categories and initialize score skeleton
     const startCompetition = () => {
       if (!canOrganiserStart()) { alert('All participants must accept and choose unique dates before starting.'); return; }
+      const enabledCats = categories.filter(c => c.enabled).slice(0,4);
+      const finalCategories = enabledCats.length ? enabledCats : [];
       const order = prepareHostingOrderChrono();
       const s = {}, c = {};
       contestants.forEach((_, h) => {
         s[h] = {}; c[h] = {};
-        contestants.forEach((__, x) => { if (h !== x) { s[h][x] = null; c[h][x] = ''; } });
+        contestants.forEach((__, x) => {
+          if (h !== x) {
+            if (scoringMode === 'simple') {
+              s[h][x] = null;
+            } else {
+              const catObj = {};
+              finalCategories.forEach(cat => catObj[cat.name] = null);
+              s[h][x] = { categories: catObj, overall: null };
+            }
+            c[h][x] = '';
+          }
+        });
       });
       setScores(s); setComments(c);
       setCurrentRound(0);
       setGameStarted(true);
       setGameState('active');
-      saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order, gameState: 'active' });
+      const categoriesToSave = finalCategories.length ? finalCategories : [];
+      saveGame({ scores: s, comments: c, currentRound: 0, gameStarted: true, hostingOrder: order, gameState: 'active', categories: categoriesToSave });
     };
 
-    // storage listener to sync across tabs
+    // storage listener
     useEffect(() => {
       if (!gameId) return;
       const handler = (e) => {
-        if (e.key === gameId) loadGame(gameId);
+        if (e.key === gameId) {
+          loadGame(gameId);
+        }
       };
       window.addEventListener('storage', handler);
       return () => window.removeEventListener('storage', handler);
     }, [gameId]);
 
-    // ensure hostingOrder exists
     useEffect(() => {
       if (gameStarted && (!hostingOrder || hostingOrder.length === 0)) {
         const order = prepareHostingOrderChrono();
@@ -453,75 +537,159 @@
       if (!gameStarted) return;
       const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
       if (myContestantId === hostIdx) { alert("Hosts can't score themselves."); return; }
-      if (myContestantId !== null && tempScore !== '' && parseInt(tempScore,10) >= 0 && parseInt(tempScore,10) <= 10) {
+
+      if (scoringMode === 'simple') {
+        if (myContestantId !== null && tempScore !== '' && !isNaN(parseInt(tempScore,10))) {
+          const val = parseInt(tempScore,10);
+          if (val < 0 || val > 10) { alert('Score must be between 0 and 10'); return; }
+          const s = {...scores};
+          s[hostIdx] = s[hostIdx] || {};
+          s[hostIdx][myContestantId] = val;
+          setScores(s);
+          saveGame({ scores: s });
+          setTempScore('');
+          setTempComment('');
+        }
+      } else {
+        const enabledCats = (categories || []).filter(c => c.enabled).slice(0,4).map(c => c.name);
+        if (!enabledCats.length) { alert('No categories selected for scoring.'); return; }
+        for (const cat of enabledCats) {
+          const v = tempCategoryScores[cat];
+          if (v === undefined || v === '' || isNaN(parseFloat(v))) { alert(`Please provide a score for "${cat}"`); return; }
+          const nv = parseFloat(v);
+          if (nv < 0 || nv > 10) { alert(`Scores must be between 0 and 10 (problem: ${cat})`); return; }
+        }
+        const nums = enabledCats.map(cat => parseFloat(tempCategoryScores[cat]));
+        const overall = Math.round((avg(nums) * 10)) / 10; // 1 decimal
         const s = {...scores}; const cm = {...comments};
         s[hostIdx] = s[hostIdx] || {};
+        s[hostIdx][myContestantId] = { categories: enabledCats.reduce((acc,cat)=>{ acc[cat]=parseFloat(tempCategoryScores[cat]); return acc; },{}), overall };
         cm[hostIdx] = cm[hostIdx] || {};
-        s[hostIdx][myContestantId] = parseInt(tempScore,10);
         cm[hostIdx][myContestantId] = tempComment;
         setScores(s); setComments(cm);
         saveGame({ scores: s, comments: cm });
-        setTempScore(''); setTempComment('');
+        setTempCategoryScores({});
+        setTempComment('');
       }
     };
 
-    const hasAllScored = (hostIndex) => { if (!scores[hostIndex]) return false; return Object.values(scores[hostIndex]).every(v => v !== null); };
+    const hasAllScored = (hostIndex) => {
+      if (!scores[hostIndex]) return false;
+      const vals = Object.values(scores[hostIndex]);
+      if (!vals.length) return false;
+      return vals.every(v => {
+        if (scoringMode === 'simple') return v !== null && v !== undefined;
+        return v && typeof v === 'object' && v.overall !== null && v.overall !== undefined;
+      });
+    };
 
     const calculateTotals = () => {
       const maxScore = (contestants.length - 1) * 10;
       const totals = contestants.map((n, idx) => {
         let total = 0;
-        if (scores[idx]) Object.values(scores[idx]).forEach(sc => { if (sc !== null) total += sc; });
+        if (scores[idx]) {
+          Object.values(scores[idx]).forEach(sc => {
+            if (sc === null || sc === undefined) return;
+            if (scoringMode === 'simple') {
+              if (typeof sc === 'number') total += sc;
+            } else {
+              if (sc && typeof sc === 'object' && typeof sc.overall === 'number') total += sc.overall;
+            }
+          });
+        }
         return { name: n, total, index: idx, maxScore };
       });
       totals.sort((a,b) => b.total - a.total);
       return totals;
     };
 
-    // voting unlock helper (Option B: if time provided -> +6h; else -> next-day midnight)
+    // voting unlock helpers
     const votingUnlockForHost = (hostIdx) => {
       const dateISO = hostDates[hostIdx];
-      if (!dateISO) return null; // no date -> no scheduled time (treat as immediate? we'll return null)
+      if (!dateISO) return null;
       const time = hostTimes[hostIdx];
       let scheduled;
-      if (time) {
-        // use provided time
-        scheduled = new Date(`${dateISO}T${time}`);
-      } else {
-        // assume midnight for the date, then add 24h to get next-day midnight
-        scheduled = new Date(`${dateISO}T00:00`);
-      }
+      if (time) scheduled = new Date(`${dateISO}T${time}`);
+      else scheduled = new Date(`${dateISO}T00:00`);
       const unlockMs = scheduled.getTime() + (time ? 6 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000);
       return new Date(unlockMs);
     };
-
     const isVotingOpenForHost = (hostIdx) => {
       const unlock = votingUnlockForHost(hostIdx);
-      if (!unlock) return true; // if no date, treat as open to avoid blocking; (or you can choose false)
+      if (!unlock) return true;
       return new Date() >= unlock;
     };
 
-    // derived values
+    // derived
     const organiser = myContestantId === 0;
     const hostIdx = hostingOrder.length > 0 ? hostingOrder[currentRound] : currentRound;
     const hostName = contestants[hostIdx] ?? null;
     const currentScores = scores[hostIdx] || {};
-    const scoredCount = Object.values(currentScores).filter(s => s !== null).length;
+    const scoredCount = Object.values(currentScores).filter(s => {
+      if (s === null || s === undefined) return false;
+      if (scoringMode === 'simple') return typeof s === 'number';
+      return s && typeof s === 'object' && typeof s.overall === 'number';
+    }).length;
     const totalGuests = Math.max(0, contestants.length - 1);
-    const iHaveScored = (myContestantId !== null && myContestantId !== hostIdx && scores[hostIdx]?.[myContestantId] !== null);
+    const iHaveScored = (myContestantId !== null && myContestantId !== hostIdx && (scores[hostIdx]?.[myContestantId] !== null && scores[hostIdx]?.[myContestantId] !== undefined));
     const disabledDatesSet = useMemo(()=> { const set = new Set(); Object.entries(hostDates).forEach(([k,v]) => { if (v) set.add(v); }); return set; }, [hostDates]);
     const myAccepted = myContestantId !== null ? !!accepted[myContestantId] : false;
     const mySelectedDate = myContestantId !== null ? hostDates[myContestantId] : null;
     const mySelectedTime = myContestantId !== null ? hostTimes[myContestantId] : null;
 
-    // safety net: guests shouldn't be in setup
+    // safety net
     useEffect(() => {
       if (myContestantId !== null && myContestantId !== 0 && gameState === 'setup') {
         setGameState('active');
       }
     }, [myContestantId, gameState]);
 
-    // RENDER
+    // category toggle
+    const toggleCategory = (name) => {
+      const next = categories.map(c => c.name === name ? { ...c, enabled: !c.enabled } : c);
+      const enabledCount = next.filter(c => c.enabled).length;
+      if (enabledCount > 4) { window.showToast('Maximum 4 categories allowed', 'error', 2500); return; }
+      setCategories(next);
+      saveGame({ categories: next });
+    };
+
+    const addCustomCategory = (name) => {
+      if (!name || !name.trim()) return;
+      const trimmed = name.trim();
+      if (categories.some(c => c.name.toLowerCase() === trimmed.toLowerCase())) { window.showToast('Category already exists', 'error', 2500); return; }
+      if (categories.length >= 12) { window.showToast('Category limit reached', 'error', 2500); return; }
+      const next = [...categories, { name: trimmed, enabled: true }];
+      if (next.filter(c => c.enabled).length > 4) { window.showToast('Enabling this would exceed 4 enabled categories', 'error', 2500); return; }
+      setCategories(next);
+      saveGame({ categories: next });
+    };
+
+    // terminate
+    const confirmTerminate = async () => {
+      setShowTerminateModal(false);
+      await saveGame({ gameState: 'terminated' });
+      setGameState('terminated');
+      window.showToast('Competition terminated (private results)', 'success', 3000);
+    };
+
+    const shareResults = async () => {
+      await saveGame({ gameState: 'results' });
+      setGameState('results');
+      window.showToast('Results shared', 'success', 3000);
+    };
+
+    const deletePermanently = async () => {
+      try {
+        await window.storage.delete(gameId);
+        window.showToast('Competition deleted', 'success', 2200);
+        window.location.href = window.location.href.split('?')[0];
+      } catch (e) {
+        console.error('delete error', e);
+        window.showToast('Error deleting', 'error', 3000);
+      }
+    };
+
+    // RENDER (use early returns like earlier code)
     if (gameState === 'loading') return <div className="container"><h1 className="title">Loading...</h1></div>;
 
     // SETUP
@@ -529,72 +697,82 @@
       return (
         <div className="container">
           <h1 className="title">🍽️ Culinary Quest</h1>
-          <p className="subtitle">Every Guest on a Quest</p>
+          <p className="subtitle">Organiser: configure your competition</p>
 
-          {!showLinks ? (
-            <div className="card">
-              <h2>Setup Your Competition</h2>
-              <div style={{display:'flex', gap:8, marginTop:8}}>
-                <input value={newContestantName} onChange={e=>setNewContestantName(e.target.value)} placeholder="Guest name" />
-                <button onClick={addContestant} className="btn-secondary" disabled={!newContestantName.trim() || contestants.length>=6}>+ Add</button>
-              </div>
-
-              <div className="list" style={{marginTop:12}}>
-                {contestants.map((n,i) => (
-                  <div key={i} className="list-item">
-                    <div style={{display:'flex', gap:8, alignItems:'center'}}>
-                      <div style={{fontWeight:600}}>{i+1}. {n}</div>
-                      {i===0 && <div className="badge">Organiser</div>}
-                    </div>
-                    <div style={{display:'flex', gap:8}}>
-                      <button onClick={()=>removeContestant(i)} className="btn-ghost">{i===0 ? 'Cannot remove' : 'Remove'}</button>
-                      <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
-                    </div>
-                  </div>
-                ))}
-                {contestants.length === 0 && <div style={{textAlign:'center', padding:'1rem', color:'#9ca3af'}}>No participants yet — add guests to begin.</div>}
-              </div>
-
-              <div style={{marginTop:12}}>
-                <button onClick={()=>{ setShowLinks(true); saveGame({}); }} className="btn-success" disabled={contestants.length < 2}>Share Links & RSVP</button>
-                <div style={{marginTop:8}} className="muted">Organiser is participant #1. Minimum 2 participants required.</div>
-              </div>
+          <div className="card">
+            <h2>Setup Your Competition</h2>
+            <div style={{display:'flex', gap:8, marginTop:8}}>
+              <input value={newContestantName} onChange={e=>setNewContestantName(e.target.value)} placeholder="Guest name" />
+              <button onClick={addContestant} className="btn-secondary" disabled={!newContestantName.trim() || contestants.length>=6}>+ Add</button>
             </div>
-          ) : (
 
-            <div className="card">
-              <h2>🔗 Invite Links & RSVP</h2>
-              <p className="muted">Send each player their unique link. Each player must accept and choose a hosting date before the organiser can start.</p>
+            <div className="list" style={{marginTop:12}}>
+              {contestants.map((n,i) => (
+                <div key={i} className="list-item">
+                  <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                    <div style={{fontWeight:600}}>{i+1}. {n}</div>
+                    {i===0 && <div className="badge">Organiser</div>}
+                  </div>
+                  <div style={{display:'flex', gap:8}}>
+                    <button onClick={()=>removeContestant(i)} className="btn-ghost">{i===0 ? 'Cannot remove' : 'Remove'}</button>
+                    <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
+                  </div>
+                </div>
+              ))}
+              {contestants.length === 0 && <div style={{textAlign:'center', padding:'1rem', color:'#9ca3af'}}>No participants yet — add guests to begin.</div>}
+            </div>
 
-              <div className="list" style={{marginTop:12}}>
-                {contestants.map((n,i)=>(
-                  <div key={i} className="list-item">
-                    <div>
-                      <div style={{fontWeight:600}}>{n} {i===0 && <span style={{fontSize:'0.8rem', color:'#fff', background:'#3b82f6', padding:'0.15rem 0.4rem', borderRadius:6, marginLeft:8}}>YOU</span>}</div>
-                      <div style={{fontSize:'0.85rem'}} className="muted">
-                        { organiser ? (accepted[i] ? `Accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : (hostDates[i] ? `Selected date — ${formatDateReadable(hostDates[i], hostTimes[i])} (not accepted)` : 'Pending RSVP')) : (i === myContestantId ? (accepted[i] ? `You accepted — ${formatDateReadable(hostDates[i], hostTimes[i])}` : 'Pending your RSVP') : '')}
+            <div style={{marginTop:12}}>
+              <button onClick={()=>{ setShowLinks(true); saveGame({}); }} className="btn-success" disabled={contestants.length < 2}>Share Links & RSVP</button>
+              <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setScoringMode('simple'); setCategories(defaultCategories); saveGame({ scoringMode:'simple', categories: defaultCategories }); }}>Reset Scoring Options</button>
+              <div style={{marginTop:8}} className="muted">Organiser is participant #1. Minimum 2 participants required.</div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Scoring Options</h3>
+            <div style={{marginTop:8}}>
+              <label style={{display:'block', marginBottom:8}}>
+                <input type="radio" name="scoring" checked={scoringMode==='simple'} onChange={()=>{ setScoringMode('simple'); saveGame({ scoringMode:'simple' }); }} /> <strong style={{marginLeft:8}}>Simple scoring</strong> — one overall score per guest (0–10)
+              </label>
+              <label style={{display:'block', marginTop:8}}>
+                <input type="radio" name="scoring" checked={scoringMode==='categories'} onChange={()=>{ setScoringMode('categories'); saveGame({ scoringMode:'categories' }); }} /> <strong style={{marginLeft:8}}>Category scoring</strong> — up to 4 categories, average per guest (1 decimal)
+              </label>
+
+              {scoringMode === 'categories' && (
+                <div style={{marginTop:12}}>
+                  <div className="muted">Choose up to 4 categories (defaults below). Add custom if needed.</div>
+                  <div style={{marginTop:8}}>
+                    {categories.map((c, idx) => (
+                      <div key={c.name} style={{display:'flex', alignItems:'center', gap:8, marginTop:6}}>
+                        <label style={{display:'flex', alignItems:'center', gap:8}}>
+                          <input type="checkbox" checked={!!c.enabled} onChange={()=>toggleCategory(c.name)} />
+                          <span style={{fontWeight:600}}>{c.name}</span>
+                        </label>
                       </div>
-                    </div>
-                    <div style={{display:'flex', gap:8}}>
-                      <button onClick={()=>copyLink(i)} className="btn-ghost">{copiedIndex===i?'✓ Copied':'Copy link'}</button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              <div style={{marginTop:12}}>
-                <button onClick={() => { setGameState('active'); saveGame({}); }} className="btn-success">Done — Wait for RSVPs</button>
-                <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setShowLinks(false); }}>Back</button>
-              </div>
+                  <div style={{marginTop:10, display:'flex', gap:8}}>
+                    <input id="new-cat-2" placeholder="Add custom category (e.g. Ambience)" />
+                    <button className="btn-ghost" onClick={()=>{ const el=document.getElementById('new-cat-2'); if (!el) return; const v=el.value; addCustomCategory(v); el.value=''; }}>Add</button>
+                  </div>
+                  <div style={{marginTop:8}} className="muted">Enabled: {categories.filter(c=>c.enabled).length}/4</div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div style={{marginTop:8}}>
+            <button className="btn-success" disabled={contestants.length<2} onClick={()=>{ setGameState('active'); saveGame({ gameState:'active' }); }}>Done — Wait for RSVPs</button>
+            <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setShowLinks(true); }}>Invite Links</button>
+          </div>
         </div>
       );
     }
 
     // ACTIVE
     if (gameState === 'active') {
-      // RSVP flow for guests who haven't accepted
       if (myContestantId !== null && !myAccepted && !gameStarted) {
         const disabledForMe = new Set(Object.entries(hostDates).filter(([k,v]) => parseInt(k,10) !== myContestantId && v).map(([_,v])=>v));
         const today = new Date(); today.setHours(0,0,0,0);
@@ -603,15 +781,9 @@
             <h1 className="title">🍽️ Invitation</h1>
             <div className="card">
               <h2>You're invited, {contestants[myContestantId]}!</h2>
-              <p className="muted">Choose the date you would like to host. Date is required, time optional. One booking per day.</p>
+              <p className="muted">Choose the date you would like to host. Date required; time optional.</p>
 
-              <Calendar
-                selectedDate={mySelectedDate}
-                onSelect={(isoDate) => selectDateFor(myContestantId, isoDate, hostTimes[myContestantId])}
-                disabledDates={disabledForMe}
-                minDate={today}
-              />
-
+              <Calendar selectedDate={mySelectedDate} onSelect={(isoDate)=>selectDateFor(myContestantId, isoDate, hostTimes[myContestantId])} disabledDates={disabledForMe} minDate={today} />
               <div style={{marginTop:12}}>
                 <label className="muted" style={{display:'block', marginBottom:6}}>Optional time</label>
                 <input type="time" value={mySelectedTime || ''} onChange={(e)=>{ const t=e.target.value || undefined; const ht={...hostTimes}; if (t) ht[myContestantId]=t; else delete ht[myContestantId]; setHostTimes(ht); saveGame({ hostTimes: ht }); }} />
@@ -632,7 +804,6 @@
         );
       }
 
-      // main active page (before gameStarted) or scoring UI (after started)
       if (!gameStarted) {
         const acceptedCount = Object.values(accepted).filter(Boolean).length;
         return (
@@ -645,9 +816,7 @@
 
               { organiser ? (
                 <div>
-                  <p className="muted">Organiser view: review RSVPs and chosen dates. You can start once everyone has accepted and dates are unique.</p>
-
-                  {acceptedCount === 0 && <div style={{textAlign:'center', padding:'2rem', color:'#9ca3af'}}><div style={{fontSize:'2rem'}}>⏳</div><p>Waiting for guests to accept invitations...</p></div>}
+                  <p className="muted">Organiser view: review RSVPs. Start when everyone has accepted and dates are unique.</p>
 
                   <div style={{marginTop:12}}>
                     {contestants.map((n,i)=>(
@@ -658,6 +827,7 @@
                         </div>
                         <div style={{display:'flex',gap:8}}>
                           <button className="btn-ghost" onClick={()=>{ if (!confirm('Clear date selection for this participant?')) return; const hd={...hostDates}; delete hd[i]; setHostDates(hd); saveGame({ hostDates: hd }); }}>Clear</button>
+                          <button className="btn-ghost" onClick={()=>copyLink(i)}>{copiedIndex===i?'✓ Copied':'Copy link'}</button>
                         </div>
                       </div>
                     ))}
@@ -670,22 +840,20 @@
                       const list = order.map((i, idx) => ({ num: idx+1, name: contestants[i], date: formatDateReadable(hostDates[i], hostTimes[i]) }));
                       setScheduleText(list);
                       setShowStartModal(true);
-                    }}>
-                      Start Competition
-                    </button>
-                    <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setGameState('setup'); alert('You can manage participants in the Setup screen.'); }}>Manage Participants</button>
+                    }}>Start Competition</button>
+
+                    <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setShowLinks(true); }}>Invite Links</button>
+
+                    <button className="btn-ghost" style={{marginLeft:8}} onClick={()=>{ setShowTerminateModal(true); }}>Terminate Game</button>
                   </div>
 
-                  {/* modal */}
                   {showStartModal && (
                     <div className="modal-overlay">
                       <div className="modal" role="dialog" aria-modal="true">
                         <h3>Start competition</h3>
                         <p className="muted">Review the schedule before starting:</p>
-                        <ul style={{marginTop:'0.5rem'}}>
-                          {scheduleText.map((s) => (
-                            <li key={s.num}><strong>{s.num}.</strong> {s.name} — {s.date}</li>
-                          ))}
+                        <ul style={{marginTop:'.5rem'}}>
+                          {scheduleText.map(s => <li key={s.num}><strong>{s.num}.</strong> {s.name} — {s.date}</li>)}
                         </ul>
                         <div className="modal-actions">
                           <button className="btn-ghost" onClick={()=>setShowStartModal(false)}>Cancel</button>
@@ -698,38 +866,49 @@
                     </div>
                   )}
 
+                  {showTerminateModal && (
+                    <div className="modal-overlay">
+                      <div className="modal">
+                        <h3>Terminate Competition</h3>
+                        <p className="muted">Are you sure? Terminating will close the competition and freeze scores. You can then choose to share or delete results.</p>
+                        <div className="modal-actions">
+                          <button className="btn-ghost" onClick={()=>setShowTerminateModal(false)}>Cancel</button>
+                          <button className="btn-primary" onClick={confirmTerminate}>Terminate</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               ) : (
                 <div>
-                  <div style={{marginTop:8}}>
-                    <div className="list-item">
-                      <div>
-                        <div style={{fontWeight:600}}>Your RSVP</div>
-                        <div className="muted">{ myAccepted ? `Accepted — ${formatDateReadable(hostDates[myContestantId], hostTimes[myContestantId])}` : 'Not accepted yet' }</div>
-                      </div>
+                  <div className="list-item">
+                    <div>
+                      <div style={{fontWeight:600}}>Your RSVP</div>
+                      <div className="muted">{ myAccepted ? `Accepted — ${formatDateReadable(hostDates[myContestantId], hostTimes[myContestantId])}` : 'Not accepted yet' }</div>
                     </div>
-
-                    <div className="wait-box">
-                      <div style={{fontWeight:700}}>Please wait for the organiser to start the competition</div>
-                      <div className="muted" style={{marginTop:6}}>Once the organiser starts the competition, you will be able to submit scores for each dinner party.</div>
-                    </div>
-
-                    <div style={{marginTop:12}} className="muted">Group progress: {acceptedCount}/{contestants.length} accepted</div>
                   </div>
+
+                  <div className="wait-box">
+                    <div style={{fontWeight:700}}>Please wait for the organiser to start the competition</div>
+                    <div className="muted" style={{marginTop:6}}>Once the organiser starts the competition, you will be able to submit scores (when voting opens).</div>
+                  </div>
+
+                  <div style={{marginTop:12}} className="muted">Group progress: {acceptedCount}/{contestants.length} accepted</div>
                 </div>
-              ) }
+              )}
             </div>
 
             <div className="card">
               <h3>Schedule Preview (chronological)</h3>
               <div style={{marginTop:12}}>
-                {(hostingOrder && hostingOrder.length) ? (
+                { (hostingOrder && hostingOrder.length) ? (
                   <div className="timeline">
                     {hostingOrder.map((idx, i) => (
                       <div key={i} className={`timeline-card ${i < currentRound ? 'complete' : (i === currentRound ? 'current' : '')}`}>
-                        <div style={{fontSize:'0.75rem', opacity:0.8}}>Round {i+1}</div>
+                        <div style={{fontSize:'.75rem', opacity:.8}}>Round {i+1}</div>
                         <div style={{fontWeight:'bold', marginTop:6}}>{contestants[idx]}</div>
-                        <div style={{fontSize:'0.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
+                        <div style={{fontSize:'.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
                       </div>
                     ))}
                   </div>
@@ -742,7 +921,6 @@
 
       // GAME STARTED: scoring UI
       const totals = calculateTotals();
-      // compute whether voting is open for this host
       const votingOpen = isVotingOpenForHost(hostIdx);
       const unlockDate = votingUnlockForHost(hostIdx);
 
@@ -756,12 +934,12 @@
             <div style={{marginTop:8, marginBottom:12}}>
               <div className="space-between">
                 <div>
-                  <div style={{fontSize:'0.95rem', color:'#6b7280'}}>Tonight's Host</div>
+                  <div style={{fontSize:'.95rem', color:'#6b7280'}}>Tonight's Host</div>
                   <div style={{fontWeight:700, fontSize:'1.25rem'}}>{hostName}</div>
-                  <div className="muted" style={{fontSize:'0.9rem', marginTop:4}}>{ hostIdx != null ? `Host's date: ${hostDates[hostIdx] ? formatDateReadable(hostDates[hostIdx], hostTimes[hostIdx]) : 'Pending'}` : '' }</div>
+                  <div className="muted" style={{fontSize:'.9rem', marginTop:4}}>{ hostIdx != null ? `Host's date: ${hostDates[hostIdx] ? formatDateReadable(hostDates[hostIdx], hostTimes[hostIdx]) : 'Pending'}` : '' }</div>
                 </div>
                 <div style={{width:'40%'}}>
-                  <div style={{fontSize:'0.85rem', color:'#6b7280'}}>Progress</div>
+                  <div style={{fontSize:'.85rem', color:'#6b7280'}}>Progress</div>
                   <div style={{display:'flex', alignItems:'center', gap:8}}>
                     <div style={{flex:1}}>
                       <div className="progress-bar"><div className="progress-fill" style={{width: `${totalGuests === 0 ? 0 : (scoredCount / totalGuests) * 100}%`}}></div></div>
@@ -772,32 +950,65 @@
               </div>
             </div>
 
-            {/* Voting locked banner vs scoring form */}
             {!votingOpen ? (
               <div className="card" style={{background:'#dbeafe', marginBottom:12}}>
                 <h3 style={{marginTop:0}}>⏳ Voting not open yet</h3>
-                <p className="muted">
-                  Voting for <strong>{hostName}</strong>&nbsp;opens {unlockDate ? unlockDate.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : 'soon'}.
-                </p>
-                <p className="muted" style={{marginTop:6}}>You will be able to submit your score after that time.</p>
+                <p className="muted">Voting for <strong>{hostName}</strong> opens {unlockDate ? unlockDate.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : 'soon'}.</p>
               </div>
             ) : (
-              myContestantId !== null && myContestantId !== hostIdx && !iHaveScored && (
-                <div className="card" style={{background:'#fef3c7', marginBottom:12}}>
-                  <h3>Score tonight's host: {hostName}</h3>
-                  <div style={{marginTop:8}}>
-                    <label className="muted">Your score (0–10)</label>
-                    <input inputMode="numeric" type="number" min="0" max="10" value={tempScore} onChange={e=>setTempScore(e.target.value)} />
-                  </div>
-                  <div style={{marginTop:8}}>
-                    <label className="muted">Comment (optional)</label>
-                    <textarea rows="3" value={tempComment} onChange={e=>{ setTempComment(e.target.value); saveGameDebounced({ comments: { ...comments, [hostIdx]: { ...(comments[hostIdx] || {}), [myContestantId]: e.target.value } } }); }} />
-                  </div>
-                  <div style={{marginTop:8}}>
-                    <button className="btn-primary" onClick={submitScore} disabled={tempScore === '' || parseInt(tempScore,10) < 0 || parseInt(tempScore,10) > 10}>Submit Score</button>
-                  </div>
-                </div>
-              )
+              <>
+                { myContestantId !== null && myContestantId !== hostIdx && !iHaveScored && (
+                  scoringMode === 'simple' ? (
+                    <div className="card" style={{background:'#fef3c7', marginBottom:12}}>
+                      <h3>Score tonight's host: {hostName}</h3>
+                      <div style={{marginTop:8}}>
+                        <label className="muted">Your score (0–10)</label>
+                        <input inputMode="numeric" type="number" min="0" max="10" value={tempScore} onChange={e=>setTempScore(e.target.value)} />
+                      </div>
+                      <div style={{marginTop:8}}>
+                        <label className="muted">Comment (optional)</label>
+                        <textarea rows="3" value={tempComment} onChange={e=>{ setTempComment(e.target.value); saveGameDebounced({ comments: { ...comments, [hostIdx]: { ...(comments[hostIdx] || {}), [myContestantId]: e.target.value } } }); }} />
+                      </div>
+                      <div style={{marginTop:8}}>
+                        <button className="btn-primary" onClick={submitScore} disabled={tempScore === '' || isNaN(parseInt(tempScore,10))}>Submit Score</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="card" style={{background:'#fef3c7', marginBottom:12}}>
+                      <h3>Category scoring — {hostName}</h3>
+                      <div className="muted" style={{marginTop:6}}>Provide a score (0–10) for each category. Overall = average (1 decimal).</div>
+                      <div style={{marginTop:8}}>
+                        { (categories || []).filter(c=>c.enabled).slice(0,4).map((c) => (
+                          <div key={c.name} style={{marginTop:8}}>
+                            <label className="muted">{c.name}</label>
+                            <input inputMode="numeric" type="number" min="0" max="10" value={tempCategoryScores[c.name] ?? ''} onChange={(e)=>{ setTempCategoryScores(prev=>({ ...prev, [c.name]: e.target.value })); }} />
+                          </div>
+                        )) }
+                      </div>
+
+                      <div style={{marginTop:8}}>
+                        <label className="muted">Comment (optional)</label>
+                        <textarea rows="3" value={tempComment} onChange={e=>setTempComment(e.target.value)} />
+                      </div>
+
+                      <div style={{marginTop:8}}>
+                        <div className="muted">Overall (preview): <strong>{ (() => {
+                          const enabled = (categories||[]).filter(c=>c.enabled).slice(0,4).map(c=>c.name);
+                          if (!enabled.length) return '—';
+                          const nums = enabled.map(cat => parseFloat(tempCategoryScores[cat]) ).filter(n=>!isNaN(n));
+                          if (nums.length !== enabled.length) return '—';
+                          const overall = Math.round(avg(nums) * 10) / 10;
+                          return overall.toFixed(1);
+                        })() }</strong></div>
+                      </div>
+
+                      <div style={{marginTop:8}}>
+                        <button className="btn-primary" onClick={submitScore}>Submit Category Scores</button>
+                      </div>
+                    </div>
+                  )
+                ) }
+              </>
             )}
 
             { myContestantId === hostIdx && <div className="card" style={{background:'#fef3c7'}}>🍽️ You're tonight's host — you don't score yourself.</div> }
@@ -807,9 +1018,15 @@
                 <h4>Scoring Status (Organiser)</h4>
                 {contestants.map((n,i) => {
                   if (i === hostIdx) return null;
-                  const has = currentScores[i] !== null;
+                  const has = (scoringMode === 'simple') ? (currentScores[i] !== null && currentScores[i] !== undefined) : (currentScores[i] && currentScores[i].overall !== null && currentScores[i].overall !== undefined);
                   return <div key={i} className="list-item">{n} <div>{has ? '✅ Scored' : '⏳ Pending'}</div></div>;
                 })}
+                <div style={{marginTop:12}}>
+                  { hasAllScored(hostIdx) ? ( currentRound < contestants.length - 1 ? <button className="btn-success" onClick={() => { const nr = currentRound + 1; setCurrentRound(nr); saveGame({ currentRound: nr }); }}>Next Dinner Party →</button> : <button className="btn-primary" onClick={async () => { await saveGame({ gameState: 'results' }); setGameState('results'); }}>🏆 View Final Results</button> ) : <div className="muted">Wait for all scores before progressing.</div> }
+                </div>
+                <div style={{marginTop:8}}>
+                  <button className="btn-ghost" onClick={()=>setShowTerminateModal(true)}>Terminate Game</button>
+                </div>
               </div>
             ) : (
               <div style={{marginTop:12}}>
@@ -817,16 +1034,6 @@
                 <div className="list-item"><div>Group progress</div><div className="muted">{scoredCount}/{totalGuests} submitted</div></div>
               </div>
             )}
-
-            <div style={{marginTop:12}}>
-              { organiser && hasAllScored(hostIdx) ? (
-                currentRound < contestants.length - 1 ? (
-                  <button className="btn-success" onClick={() => { const nr = currentRound + 1; setCurrentRound(nr); saveGame({ currentRound: nr }); }}>Next Dinner Party →</button>
-                ) : (
-                  <button className="btn-primary" onClick={async () => { await saveGame({ gameState: 'results' }); setGameState('results'); }}>🏆 View Final Results</button>
-                )
-              ) : ( !organiser && hasAllScored(hostIdx) ? <div className="muted">All scores submitted — waiting for organiser to progress.</div> : null )}
-            </div>
           </div>
 
           <div className="card">
@@ -836,23 +1043,105 @@
                 <div className="timeline">
                   {hostingOrder.map((idx, i) => (
                     <div key={i} className={`timeline-card ${i < currentRound ? 'complete' : (i === currentRound ? 'current' : '')}`}>
-                      <div style={{fontSize:'0.75rem', opacity:0.8}}>Round {i+1}</div>
+                      <div style={{fontSize:'.75rem', opacity:.8}}>Round {i+1}</div>
                       <div style={{fontWeight:'bold', marginTop:6}}>{contestants[idx]}</div>
-                      <div style={{fontSize:'0.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
+                      <div style={{fontSize:'.8rem', marginTop:6}}>{formatDateReadable(hostDates[idx], hostTimes[idx])}</div>
                     </div>
                   ))}
                 </div>
               ) : <div className="muted">Schedule will appear here once organiser starts the competition.</div> }
             </div>
           </div>
+
         </div>
       );
     }
 
-    // RESULTS
+    // TERMINATED
+    if (gameState === 'terminated') {
+      const results = calculateTotals();
+      const topScore = results[0]?.total ?? 0;
+      const winners = results.filter(r => r.total === topScore);
+      const isTie = winners.length > 1;
+      return (
+        <div className="container">
+          <h1 className="title">🏁 Competition Terminated (Private)</h1>
+          <p className="subtitle">Organiser can review results privately, then share or delete.</p>
+
+          { myContestantId === 0 ? (
+            <div className="card">
+              <h3>Private Results Preview</h3>
+              <div style={{marginTop:12}}>
+                <div style={{background:'#fef3c7', border:'4px solid #f59e0b', padding:16, borderRadius:12, textAlign:'center'}}>
+                  {isTie ? (<><h2>🤝 It’s a Tie!</h2><div style={{marginTop:8}}>{winners.map((w,i)=><div key={i} style={{fontWeight:700}}>{w.name}</div>)}</div><p style={{marginTop:8}}>Top score: {topScore}/{winners[0].maxScore}</p></>) : (<><h2>🎉 Winner 🎉</h2><div style={{fontWeight:700, fontSize:'1.25rem'}}>{winners[0].name}</div><p style={{marginTop:8}}>Score: {winners[0].total}/{winners[0].maxScore}</p></>)}
+                </div>
+
+                <h4 style={{marginTop:12}}>Leaderboard</h4>
+                <div style={{marginTop:8}}>
+                  {results.map((r,i)=> (
+                    <div key={i} className="list-item"><div><strong>#{i+1}</strong> <span style={{marginLeft:8}}>{r.name}</span></div><div style={{fontWeight:700, color:'#ea580c'}}>{ scoringMode === 'categories' ? r.total.toFixed(1) : r.total }</div></div>
+                  ))}
+                </div>
+
+                <div style={{marginTop:12}}>
+                  <h4>All Scores</h4>
+                  <div style={{marginTop:8}}>
+                    {contestants.map((hostName, hi)=>(
+                      <div key={hi} style={{background:'#fef3c7', padding:10, borderRadius:8, marginBottom:8}}>
+                        <div style={{fontWeight:700}}>{hostName}'s Dinner Party</div>
+                        <div style={{marginTop:6}}>
+                          {contestants.map((scorer, si) => {
+                            if (hi === si) return null;
+                            const sc = scores[hi]?.[si];
+                            const cm = comments[hi]?.[si];
+                            return (
+                              <div key={si} style={{background:'#fff', padding:8, borderRadius:6, marginTop:6}}>
+                                <div style={{display:'flex', justifyContent:'space-between'}}><div>{scorer}</div><div style={{fontWeight:700, color:'#ea580c'}}>{ sc ? (scoringMode === 'categories' ? `${sc.overall.toFixed(1)}/10` : `${sc}/10`) : '—' }</div></div>
+                                {scoringMode === 'categories' && sc?.categories && <div style={{marginTop:6, color:'#6b7280'}}>{Object.entries(sc.categories).map(([k,v]) => <div key={k}>{k}: {v !== null ? v : '—'}</div>)}</div>}
+                                {cm ? <div style={{marginTop:6, color:'#6b7280', fontStyle:'italic'}}>"{cm}"</div> : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{marginTop:12, display:'flex', gap:8}}>
+                  <button className="btn-success" onClick={shareResults}>Share Results (Make Public)</button>
+                  <button className="btn-ghost" onClick={()=>setShowDeleteConfirm(true)}>Delete Permanently</button>
+                </div>
+
+                {showDeleteConfirm && (
+                  <div className="modal-overlay">
+                    <div className="modal">
+                      <h3>Delete Permanently</h3>
+                      <p className="muted">This will permanently delete all data. Are you sure?</p>
+                      <div className="modal-actions">
+                        <button className="btn-ghost" onClick={()=>setShowDeleteConfirm(false)}>Cancel</button>
+                        <button className="btn-primary" onClick={deletePermanently}>Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          ) : (
+            <div className="card">
+              <h3>Competition ended — results not shared</h3>
+              <p className="muted">The organiser has ended the competition and is reviewing results privately. Results will be shared when the organiser chooses to publish them.</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // RESULTS (public)
     if (gameState === 'results') {
       const results = calculateTotals();
-      const topScore = results[0]?.total || 0;
+      const topScore = results[0]?.total ?? 0;
       const winners = results.filter(r => r.total === topScore);
       const isTie = winners.length > 1;
       return (
@@ -860,25 +1149,13 @@
           <h1 className="title">🏆 Final Results</h1>
           <div className="card">
             <div style={{background:'#fef3c7', border:'4px solid #f59e0b', padding:16, borderRadius:12, textAlign:'center'}}>
-              {isTie ? (
-                <>
-                  <h2>🤝 It’s a Tie!</h2>
-                  <div style={{marginTop:8}}>{winners.map((w,i)=> <div key={i} style={{fontWeight:700}}>{w.name}</div>)}</div>
-                  <p style={{marginTop:8}}>Top score: {topScore}/{winners[0].maxScore}</p>
-                </>
-              ) : (
-                <>
-                  <h2>🎉 Winner 🎉</h2>
-                  <div style={{fontWeight:700, fontSize:'1.25rem'}}>{winners[0].name}</div>
-                  <p style={{marginTop:8}}>Score: {winners[0].total}/{winners[0].maxScore}</p>
-                </>
-              )}
+              {isTie ? (<><h2>🤝 It’s a Tie!</h2><div style={{marginTop:8}}>{winners.map((w,i)=><div key={i} style={{fontWeight:700}}>{w.name}</div>)}</div><p style={{marginTop:8}}>Top score: {topScore}/{winners[0].maxScore}</p></>) : (<><h2>🎉 Winner 🎉</h2><div style={{fontWeight:700, fontSize:'1.25rem'}}>{winners[0].name}</div><p style={{marginTop:8}}>Score: {winners[0].total}/{winners[0].maxScore}</p></>)}
             </div>
 
             <h3 style={{marginTop:12}}>Final Leaderboard</h3>
             <div style={{marginTop:8}}>
               {results.map((r,i)=> (
-                <div key={i} className="list-item"><div><strong>#{i+1}</strong> <span style={{marginLeft:8}}>{r.name}</span></div><div style={{fontWeight:700, color:'#ea580c'}}>{r.total}/{r.maxScore}</div></div>
+                <div key={i} className="list-item"><div><strong>#{i+1}</strong> <span style={{marginLeft:8}}>{r.name}</span></div><div style={{fontWeight:700, color:'#ea580c'}}>{ scoringMode === 'categories' ? r.total.toFixed(1) : r.total }</div></div>
               ))}
             </div>
 
@@ -895,7 +1172,8 @@
                         const cm = comments[hi]?.[si];
                         return (
                           <div key={si} style={{background:'#fff', padding:8, borderRadius:6, marginTop:6}}>
-                            <div style={{display:'flex', justifyContent:'space-between'}}><div>{scorer}</div><div style={{fontWeight:700, color:'#ea580c'}}>{sc !== null ? `${sc}/10` : '—'}</div></div>
+                            <div style={{display:'flex', justifyContent:'space-between'}}><div>{scorer}</div><div style={{fontWeight:700, color:'#ea580c'}}>{ sc ? (scoringMode === 'categories' ? `${sc.overall.toFixed(1)}/10` : `${sc}/10`) : '—' }</div></div>
+                            {scoringMode === 'categories' && sc?.categories && <div style={{marginTop:6, color:'#6b7280'}}>{Object.entries(sc.categories).map(([k,v]) => <div key={k}>{k}: {v !== null ? v : '—'}</div>)}</div>}
                             {cm ? <div style={{marginTop:6, color:'#6b7280', fontStyle:'italic'}}>"{cm}"</div> : null}
                           </div>
                         );
@@ -907,7 +1185,7 @@
             </div>
 
             <div style={{marginTop:12}}>
-              {myContestantId === 0 ? <button className="btn-primary" onClick={async () => { if (!confirm('Start a fresh competition? This will clear current game data.')) return; await window.storage.delete(gameId); window.location.href = window.location.href.split('?')[0]; }}>Start New Competition</button> : <div style={{textAlign:'center', padding:10, background:'#f3f4f6', borderRadius:8}}><p className="muted">Only the organiser can start a new competition.</p></div>}
+              {myContestantId === 0 ? <button className="btn-primary" onClick={async () => { if (!confirm('Start a fresh competition? This will clear current game data.')) return; await window.storage.delete(gameId); window.location.href = window.location.href.split('?')[0]; }}>Start New Competition</button> : <div style={{textAlign:'center', padding:10, background:'#f3f4f6', borderRadius:8}}><p className="muted">Results are shared publicly.</p></div>}
             </div>
           </div>
         </div>
@@ -917,11 +1195,10 @@
     return null;
   }
 
-  // mount
   ReactDOM.createRoot(document.getElementById('root')).render(<CulinaryQuest />);
   </script>
 
-  <!-- Toast element rendered by React; nothing else needed here -->
-
+  <!-- Helpful debug: expose errors to console -->
+  <script>window.addEventListener('error', (e) => console.error('Window error:', e.error || e.message));</script>
 </body>
 </html>
