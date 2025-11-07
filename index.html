@@ -719,9 +719,9 @@ const [myContestantId, setMyContestantId] = useState(getMyId());
   }
 
   // RSVP join view
-  if(phase==='rsvp' && (hasGameParam || savedSession.gameId)){
-    const gid = hasGameParam ? qs.get('game') : savedSession.gameId;
-    const cId = myContestantId ?? savedSession.contestantId ?? null;
+  if (phase==='rsvp' && (hasGameParam || savedSession.gameId)){
+  const gid = hasGameParam ? qs.get('game') : savedSession.gameId;
+  const cId = getMyId();
 
     // If accepted → show confirmation
     if(cId!=null && rsvp[cId]===1){
