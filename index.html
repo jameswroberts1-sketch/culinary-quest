@@ -318,9 +318,16 @@ function App(){
   const [showCancel, setShowCancel] = useState(false);
 
   // Live state
-  const [myContestantId, setMyContestantId] = useState(
-    hasGameParam ? parseInt(qs.get('c')||savedSession.contestantId||'0',10) : (savedSession.contestantId ?? null)
-  );
+  const getMyId = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('cq_active_game') || '{}');
+    if (typeof saved.contestantId === 'number') return saved.contestantId;
+  } catch {}
+  const param = qs.get('c');
+  return param != null ? parseInt(param, 10) : null;
+};
+
+const [myContestantId, setMyContestantId] = useState(getMyId());
   const [st, setSt] = useState(0);
   const [p, setP] = useState([]);
   const [rsvp, setRsvp] = useState({});
