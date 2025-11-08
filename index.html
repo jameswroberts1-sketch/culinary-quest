@@ -551,7 +551,7 @@
   function screenInvite(gid, cid){
   // Always show a loader; never let guests stare at a blank screen
   render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
-  readOnce(`games/${gid}`).then(x=>{
+    readOnce(`games/${gid}`).then(x=>{
     if(!x){
       render(`
         <div class="card fade">
@@ -564,75 +564,111 @@
       $('#btnRetry').onclick = ()=> route();
       return;
     }
-    const pLen = (x.p||[]).length;
-    if (!(Number.isInteger(cid) && cid >= 0 && cid < pLen)) {
+
+    if(x.rsvp?.[cid]===1){
+      const org = (x.p||[])[0] || 'Organiser';
+      const iso = (x.d||{})[cid];
+      const tm  = (x.t||{})[cid];
       render(`
         <div class="card fade">
           ${logoSVG}
-          <h2 class="title">Invalid Invitation Link</h2>
-          <p class="muted">This link doesn’t match any participant in this game.</p>
-          <div class="actions"><button class="btn btn-primary" id="btnBack">Back</button></div>
+          <h2 class="title">You're all set!</h2>
+          <p class="subtitle">You accepted ${org}'s invitation.</p>
+          <div class="list" style="margin-top:8px">
+            <div class="list-item">
+              <div>
+                <div><strong>Your hosting slot</strong></div>
+                <div class="muted" style="font-size:.9rem">${fmtDateTime(iso, tm)}</div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" id="btnBack">Change date/time</button>
+          </div>
         </div>
       `);
-      $('#btnBack').onclick = ()=> route();
+      $('#btnBack').onclick = ()=> screenInvite(gid, cid);
       return;
     }
-    if(x.rsvp?.[cid]===1){
-      const org = (x.p||[])[0] || 'Organiser';
 
-        const s = `
-          <div class="card fade" style="background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(250,204,21,0.18))">
-            ${logoSVG}
-            <h2 class="title">🎉 You’re all set!</h2>
-            <p class="subtitle">Your hosting date: <strong>${fmtDateTime((x.d||{})[cid], (x.t||{})[cid])}</strong></p>
-            <div class="card" style="margin-top:8px">
-              <p>When all participants have responded, <strong>${org}</strong> will progress the game status to <strong>“Let’s Go!”</strong>.</p>
-              <p class="muted" style="margin-top:6px">Sit tight — your Culinary Quest will begin soon 🍽️</p>
-            </div>
-            <div class="slogan" id="slogan"></div>
-          </div>`;
-        render(s);
-        const rot = ()=> { const a=COPY.splash; $('#slogan').textContent=a[Math.floor(Math.random()*a.length)]; };
-        rot(); setInterval(rot, 36000);
-        return;
-      }
-      const disabled = new Set(Object.entries(x.d||{}).filter(([k,v])=> +k!==cid && v).map(([_,v])=>v));
-      const s = `
-        <div class="card fade">
-          <h1 class="title">🍽️ Invitation</h1>
-          <p class="subtitle">Welcome${ (x.p||[])[cid]? ', '+x.p[cid] : '' }!</p>
-          <p class="muted" style="text-align:center">Choose your hosting date (time optional). One host per day.</p>
-          <div class="row" style="margin-top:10px"><input type="date" id="datePick"/></div>
-          <div class="row" style="margin-top:10px"><label class="muted">Optional time</label><input type="time" id="timePick"/></div>
-          <div class="row" style="margin-top:12px">
-            <button id="btnAccept" class="btn btn-secondary">✅ Accept Invitation</button>
+    // Not yet accepted → clearer UI + confirmation step
+    const disabled = new Set(
+      Object.entries(x.d||{}).filter(([k,v])=> +k!==cid && v).map(([_,v])=> v)
+    );
+    render(`
+      <div class="card fade">
+        ${logoSVG}
+        <h1 class="title">🍽️ Choose Your Hosting Slot</h1>
+        <p class="subtitle">Welcome${ (x.p||[])[cid]? ', '+x.p[cid] : '' }!</p>
+
+        <div class="card" style="margin-top:8px; min-height:380px">
+          <h3 style="margin-bottom:6px">📅 Hosting date</h3>
+          <div class="row"><input type="date" id="datePick" style="height:44px"></div>
+          <p class="muted" style="margin-top:6px">Only one host per date. Greyed-out days are already taken.</p>
+
+          <h3 style="margin:12px 0 6px">⏰ Start time (optional)</h3>
+          <div class="row"><input type="time" id="timePick" placeholder="19:30" style="height:44px"></div>
+          <p class="muted" style="margin-top:6px">Tip: choose the time guests should arrive.</p>
+
+          <div class="actions" style="margin-top:12px">
+            <button id="btnAccept" class="btn btn-secondary">Continue</button>
             <button id="btnDecline" class="btn btn-ghost">Decline</button>
           </div>
-        </div>`;
-      render(s);
-      // robust handler attach
-      setTimeout(()=>{
-        const acceptBtn = document.getElementById('btnAccept');
-        if(acceptBtn){
-          acceptBtn.addEventListener('click', async ()=>{
-            const iso = (document.getElementById('datePick').value||'').trim(); if(!iso) return toast('Pick a date first');
-            if(disabled.has(iso)) return toast('That date is already chosen');
-            const tm = (document.getElementById('timePick').value||'').trim();
+        </div>
+      </div>
+    `);
+
+    setTimeout(()=>{
+      const acceptBtn = document.getElementById('btnAccept');
+      if(acceptBtn){
+        acceptBtn.addEventListener('click', ()=>{
+          const iso = (document.getElementById('datePick').value||'').trim();
+          if(!iso){ toast('Pick a date first'); return; }
+          if(disabled.has(iso)) { toast('That date is already chosen'); return; }
+          const tm = (document.getElementById('timePick').value||'').trim();
+
+          // Confirmation step
+          render(`
+            <div class="card fade">
+              ${logoSVG}
+              <h2 class="title">Confirm your hosting</h2>
+              <p class="subtitle">You are nominating <strong>${fmtDateTime(iso, tm)}</strong>.</p>
+              <div class="actions" style="margin-top:10px">
+                <button id="btnConfirm" class="btn btn-success btn-lg">Confirm</button>
+                <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
+              </div>
+            </div>
+          `);
+
+          document.getElementById('btnCancel').onclick = ()=> screenInvite(gid, cid);
+          document.getElementById('btnConfirm').onclick = async ()=>{
             try{
-              await patch(`games/${gid}`, { rsvp:{...x.rsvp,[cid]:1}, d:{...x.d,[cid]:iso}, t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })() });
+              await patch(`games/${gid}`, { 
+                rsvp:{...x.rsvp,[cid]:1},
+                d:{...x.d,[cid]:iso},
+                t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })()
+              });
               setSession({ gameId: gid, contestantId: cid });
-              const u=new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid); history.replaceState({},'',`${location.pathname}?${u.toString()}`);
-              toast(COPY.player.invitation_accepted);
-              setTimeout(()=> screenInvite(gid, cid), 400);
+              const u = new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid);
+              history.replaceState({},'',`${location.pathname}?${u.toString()}`);
+              toast(COPY.player.hosting_date_chosen || 'Hosting date saved');
+              setTimeout(()=> screenInvite(gid, cid), 200);
             }catch(err){ console.error(err); toast('❌ Could not save — check connection.'); }
-          });
-        }
-        const decBtn = document.getElementById('btnDecline');
-        decBtn && decBtn.addEventListener('click', async ()=>{
-          const nd={...(x.d||{})}; delete nd[cid]; await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
+          };
+        });
+      }
+
+      const decBtn = document.getElementById('btnDecline');
+      if(decBtn){
+        decBtn.addEventListener('click', async ()=>{
+          const nd={...(x.d||{})}; delete nd[cid];
+          await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
           toast('Declined');
         });
-      },50);
+      }
+    },50);
+  });
+
     });
   }
 
