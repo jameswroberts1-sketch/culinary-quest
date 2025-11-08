@@ -520,10 +520,7 @@
       const unique = new Set(ds);
       const canStart = allAcc && unique.size===ds.length && ds.length>0;
       $('#startBtn').disabled = !canStart;
-      // Insert right after your existing lines on Screen 5:
-const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
-$('#startBtn').disabled = !allAcc;
-
+     
     // Debug-only: flag unexpected duplicate dates among accepted players
     {
       const accIdx = (x.p||[]).map((_,i)=> i).filter(i => x.rsvp?.[i]===1 && (x.d||{})[i]);
