@@ -782,7 +782,7 @@
   }
 
   // Router
-async function route(){
+function route(){
   dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
   const s = getSession();
   const gid = qs.get('game') || s.gameId;
@@ -790,48 +790,91 @@ async function route(){
 
   if(!gid){ screen1(); return; }
 
-  // paint something immediately to avoid a blank screen
+  // Always show something immediately
   render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
 
-  try{
-    const snap = await get(dbr(`games/${gid}`));
-    if(!snap.exists()){ screen1(); return; }
-    const x = snap.val();
-
-    // persist session if missing
-    if(!s.gameId && gid) setSession({ gameId: gid, contestantId: (cid!=null?cid:0) });
-
-    if(x.st===1){
-      const pLen = (x.p||[]).length;
-      const isValidCid = (cid!=null) && Number.isInteger(cid) && cid>=0 && cid<pLen;
-      if(!isValidCid){
-        render(`
-          <div class="card fade">
-            ${logoSVG}
-            <h2 class="title">Invalid Invitation Link</h2>
-            <p class="muted">This link doesn’t match any participant in this game.</p>
-          </div>
-        `);
-        return;
-      }
-      if((cid??0)===0) screen5(); else screenInvite(gid, cid??0);
-    }else if(x.st===2){
-      screenGame(gid);
-    }else if(x.st===4){
-      screenResults(gid);
-    }else{
-      screen1();
-    }
-  }catch(err){
-    console.error(err);
+  // Safety: if Firebase init failed, bail gracefully
+  if(!window.__CQ_FB_READY__){
     render(`
       <div class="card fade">
         ${logoSVG}
         <h2 class="title">Unable to load</h2>
+        <p class="muted">App not initialised. Please refresh or try again later.</p>
+      </div>
+    `);
+    return;
+  }
+
+  // Timeout fallback (network/latency)
+  let timedOut = false;
+  const t = setTimeout(()=>{
+    timedOut = true;
+    render(`
+      <div class="card fade">
+        ${logoSVG}
+        <h2 class="title">Taking longer than usual…</h2>
         <p class="muted">Please check your connection and try again.</p>
       </div>
     `);
-  }
+  }, 6000);
+
+  // One-shot realtime read with error callback
+  const off = onValue(
+    dbr(`games/${gid}`),
+    snap => {
+      clearTimeout(t);
+      // Avoid double handling in rare cases
+      if (timedOut) return;
+
+      if(!snap.exists()){ screen1(); return; }
+      const x = snap.val();
+
+      // Persist session if not present
+      if(!s.gameId && gid) setSession({ gameId: gid, contestantId: (cid!=null?cid:0) });
+
+      if(x.st===1){
+        const pLen = (x.p||[]).length;
+        const isValidCid = (cid!=null) && Number.isInteger(cid) && cid>=0 && cid<pLen;
+        if(!isValidCid){
+          render(`
+            <div class="card fade">
+              ${logoSVG}
+              <h2 class="title">Invalid Invitation Link</h2>
+              <p class="muted">This link doesn’t match any participant in this game.</p>
+            </div>
+          `);
+          return;
+        }
+        if((cid??0)===0) screen5(); else screenInvite(gid, cid??0);
+      }else if(x.st===2){
+        screenGame(gid);
+      }else if(x.st===4){
+        screenResults(gid);
+      }else{
+        screen1();
+      }
+
+      // Only-once read: detach immediately
+      off && off();
+    },
+    // Error/cancel callback (e.g., permission denied)
+    err => {
+      clearTimeout(t);
+      const msg = (err && err.code === 'PERMISSION_DENIED')
+        ? `This game is not readable. Ask the organiser to adjust Firebase rules.`
+        : `Please check your connection and try again.`;
+      console.error(err);
+      render(`
+        <div class="card fade">
+          ${logoSVG}
+          <h2 class="title">Unable to load</h2>
+          <p class="muted">${msg}</p>
+        </div>
+      `);
+      off && off();
+    },
+    { onlyOnce: true }
+  );
 }
 
   // DEV reset
