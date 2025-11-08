@@ -831,12 +831,15 @@
       }
     });
   }
-
-  function canAdvance(x,host){
-    const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
-    if(!vals.length) return false;
-    return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
-  }
+// These have been commented out for testing. After testing, reactivate these lines and remove thw 2 immediately below them.
+ // function canAdvance(x,host){
+ //   const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
+ //   if(!vals.length) return false;
+ //   return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
+ // }
+function canAdvance(x,host){
+  return true; // TEMP: testing only
+}
 
   // Results
   function screenResults(gid){
