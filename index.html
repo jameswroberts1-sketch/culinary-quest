@@ -606,7 +606,6 @@
           <div class="row" style="margin-top:10px"><label class="muted">Optional time</label><input type="time" id="timePick"/></div>
           <div class="row" style="margin-top:12px">
             <button id="btnAccept" class="btn btn-secondary">✅ Accept Invitation</button>
-            <button id="btnClear" class="btn btn-ghost">Clear date</button>
             <button id="btnDecline" class="btn btn-ghost">Decline</button>
           </div>
         </div>`;
@@ -628,10 +627,6 @@
             }catch(err){ console.error(err); toast('❌ Could not save — check connection.'); }
           });
         }
-        const clearBtn = document.getElementById('btnClear');
-        clearBtn && clearBtn.addEventListener('click', async ()=>{
-          const nd={...(x.d||{})}; delete nd[cid]; await patch(`games/${gid}`, { d:nd });
-        });
         const decBtn = document.getElementById('btnDecline');
         decBtn && decBtn.addEventListener('click', async ()=>{
           const nd={...(x.d||{})}; delete nd[cid]; await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
