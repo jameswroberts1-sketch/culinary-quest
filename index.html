@@ -42,8 +42,24 @@
   .option-desc{color:var(--muted)}
   .cat-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
   @media(min-width:560px){.cat-grid{grid-template-columns:1fr 1fr}}
-  .cat-chip{display:flex;align-items:center;gap:6px;border:1px solid #e5e7eb;border-radius:10px;padding:.4rem .6rem;background:#fff;flex-wrap:nowrap;justify-content:space-between;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .cat-chip span{flex:1;overflow:hidden;text-overflow:ellipsis}
+  /* Replace your existing .cat-chip and .cat-chip span rules with exactly these */
+  .cat-chip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;              /* space so text isn't clipped by border */
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:999px;
+  background:#fff;
+  white-space:nowrap;             /* keep chip inline */
+  /* removed overflow:hidden and text-overflow from the container */
+}
+  .cat-chip span{
+  flex:1 1 auto;
+  min-width:0;                    /* allow ellipsis to work in flexbox */
+  overflow:hidden;                /* truncation lives on the span only */
+  text-overflow:ellipsis;
+}
   .lock{font-size:.75rem;color:#9ca3af;margin-left:6px}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1100;background:#111827;color:#fff;padding:.6rem 1rem;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-weight:700;opacity:0}
   @keyframes tin{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
