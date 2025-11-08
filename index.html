@@ -360,9 +360,6 @@
             <div><button class="btn-ghost" ${i===0?'disabled':''} data-rem="${i}">${i===0?'—':'Remove'}</button></div>
           </div>`).join('')}
       </div>
-      <p class="muted" style="margin-top:8px">
-        Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
-      </p>
       <div class="row" style="margin-top:6px">
         <input id="guestName" placeholder="Guest name"/>
         <button id="addGuest" class="btn btn-ghost">+ Add</button>
@@ -398,6 +395,9 @@
   // Screen 4: Create game + show copy buttons
   async function screen4(){
     dbg('screen4()', { gameId: window.__WIZ__?.gameId, players: window.__WIZ__?.players?.length });
+    <p class="muted" style="margin-top:8px">
+        Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
+      </p>
     const w = window.__WIZ__;
     if(!w.gameId){
       w.gameId = randId();
