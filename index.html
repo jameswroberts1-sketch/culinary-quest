@@ -489,7 +489,8 @@
         $('#clearOrg').onclick = async ()=>{
           const nd={...(x.d||{})}; delete nd[my];
           const nt={...(x.t||{})}; delete nt[my];
-          await patch(`games/${gid}`, { d:nd, t:nt });
+          await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr, ro: { ...(x.ro||{}), [i]: 1 } });
+
         };
       }
 
@@ -774,7 +775,7 @@
             const nt = { ...(x.t||{}) }; delete nt[i];
             const nr = { ...(x.rsvp||{}) }; nr[i] = 0; // back to pending
             try{
-              await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr });
+              await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr, ro: { ...(x.ro||{}), [i]: 1 } });
               toast('Reopened — the player can choose a new date.');
             }catch(err){
               console.error(err);
@@ -942,8 +943,18 @@ async function route(){
         screenInvite(gid, cid); // guest invite flow
       }
     } else if (x.st === 2) {
-      screenGame(gid);
-    } else if (x.st === 4) {
+  // Only guests explicitly reopened by the organiser may (re)pick after start
+  const pLen = (x.p||[]).length;
+  const isValidCid = Number.isInteger(cid) && cid >= 0 && cid < pLen;
+  const status = isValidCid ? x.rsvp?.[cid] : undefined;
+  const reopened = isValidCid ? (x.ro?.[cid] === 1) : false;
+
+  if (isValidCid && cid > 0 && status === 0 && reopened) {
+    screenInvite(gid, cid);
+  } else {
+    screenGame(gid);
+  }
+} else if (x.st === 4) {
       screenResults(gid);
     } else {
       screen1();
