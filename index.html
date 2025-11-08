@@ -135,11 +135,13 @@
     return dt + tm;
   };
   const votingUnlock = (iso,time)=>{
-    if(!iso) return null;
-    const d = new Date(iso + 'T' + (time||'00:00'));
-    const ms = d.getTime() + (time ? 6*3600e3 : 24*3600e3);
-    return new Date(ms);
-  };
+  if (DEV_MODE) return null;     // TEMP: testing unlock
+  if(!iso) return null;
+  const d = new Date(iso + 'T' + (time||'00:00'));
+  const ms = d.getTime() + (time ? 6*3600e3 : 24*3600e3);
+  return new Date(ms);
+};
+
   const toast = (msg, dur=1500)=>{
     const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
     requestAnimationFrame(()=> t.classList.add('show'));
@@ -831,14 +833,11 @@
       }
     });
   }
-// These have been commented out for testing. After testing, reactivate these lines and remove thw 2 immediately below them.
- // function canAdvance(x,host){
- //   const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
- //   if(!vals.length) return false;
- //   return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
- // }
 function canAdvance(x,host){
-  return true; // TEMP: testing only
+  if (DEV_MODE) return true; // TEMP: testing only
+  const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
+  if(!vals.length) return false;
+  return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
 }
 
   // Results
