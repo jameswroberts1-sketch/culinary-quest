@@ -549,10 +549,37 @@
 
   // Invite view for players (and organiser if not accepted)
   function screenInvite(gid, cid){
-    readOnce(`games/${gid}`).then(x=>{
-      if(!x){ render(`<div class="card">Game not found.</div>`); return; }
-      if(x.rsvp?.[cid]===1){
-        const org = (x.p||[])[0] || 'Organiser';
+  // Always show a loader; never let guests stare at a blank screen
+  render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
+  readOnce(`games/${gid}`).then(x=>{
+    if(!x){
+      render(`
+        <div class="card fade">
+          ${logoSVG}
+          <h2 class="title">Game not found</h2>
+          <p class="muted">This invitation may be invalid or the game was removed.</p>
+          <div class="actions"><button class="btn btn-primary" id="btnRetry">Retry</button></div>
+        </div>
+      `);
+      $('#btnRetry').onclick = ()=> route();
+      return;
+    }
+    const pLen = (x.p||[]).length;
+    if (!(Number.isInteger(cid) && cid >= 0 && cid < pLen)) {
+      render(`
+        <div class="card fade">
+          ${logoSVG}
+          <h2 class="title">Invalid Invitation Link</h2>
+          <p class="muted">This link doesn’t match any participant in this game.</p>
+          <div class="actions"><button class="btn btn-primary" id="btnBack">Back</button></div>
+        </div>
+      `);
+      $('#btnBack').onclick = ()=> route();
+      return;
+    }
+    if(x.rsvp?.[cid]===1){
+      const org = (x.p||[])[0] || 'Organiser';
+
         const s = `
           <div class="card fade" style="background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(250,204,21,0.18))">
             ${logoSVG}
@@ -850,20 +877,28 @@ async function route(){
     } else {
       screen1();
     }
-  } catch (err) {
-    console.error('[CQ] route() read failed', err);
-    const msg = (err && err.code === 'PERMISSION_DENIED')
-      ? `This game is not readable. Ask the organiser to adjust Firebase rules.`
-      : `Please check your connection and try again.`;
-    render(`
-      <div class="card fade">
-        ${logoSVG}
-        <h2 class="title">Unable to load</h2>
-        <p class="muted">${msg}</p>
+  } } catch (err) {
+  console.error('[CQ] route() read failed', err);
+  const code = err?.code || 'UNKNOWN';
+  const msg =
+    code === 'PERMISSION_DENIED' ? 'This game is not readable. Ask the organiser to adjust Firebase rules.' :
+    code === 'NETWORK_REQUEST_FAILED' ? 'Network error. Check your connection and try again.' :
+    'Please check your connection and try again.';
+
+  render(`
+    <div class="card fade">
+      ${logoSVG}
+      <h2 class="title">Unable to load</h2>
+      <p class="muted">${msg}</p>
+      <p class="muted" style="font-size:.85rem">Error code: <code>${code}</code></p>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnRetry">Retry</button>
       </div>
-    `);
+    </div>
+  `);
+  const btn = document.getElementById('btnRetry');
+  if (btn) btn.onclick = ()=> route();
   }
-}
 
   // DEV reset
   if(DEV_MODE){
