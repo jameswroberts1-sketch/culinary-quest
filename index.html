@@ -428,7 +428,7 @@
 </p>
 
       <div class="actions">
-        <button id="toTracker" class="btn btn-success btn-lg">Next - Monitoring RSVP's</button>
+        <button id="toTracker" class="btn btn-success btn-lg">Next - Choose your hosting date</button>
         <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
       </div>
     </div>`;
@@ -439,7 +439,7 @@
         navigator.clipboard.writeText(w.links[+i]).then(()=> toast(COPY.organiser.link_copied)).catch(()=> toast('Copy failed'));
       }
     });
-    $('#toTracker').onclick = ()=> screen5();
+    $('#toTracker').onclick = ()=> screenInvite(w.gameId, 0);
     $('#btnCancel').onclick = ()=> { toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(),900); };
   }
 
