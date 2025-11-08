@@ -483,14 +483,17 @@
           const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
           if(others.includes(iso)) return toast('That date is already chosen');
           const tm  = ($('#orgTime').value||'').trim();
-          await patch(`games/${gid}`, { rsvp: {...x.rsvp,[my]:1}, d:{...x.d,[my]:iso}, t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[my]=tm; else delete nt[my]; return nt; })() });
+                    await patch(`games/${gid}`, { 
+            rsvp: { ...(x.rsvp||{}), [my]: 1 },
+            d:    { ...(x.d||{}),    [my]: iso },
+            t:    ( ()=>{ const nt = { ...(x.t||{}) }; if (tm) nt[my]=tm; else delete nt[my]; return nt; } )()
+          });
           toast('📅 Your hosting date is confirmed!');
         };
         $('#clearOrg').onclick = async ()=>{
           const nd={...(x.d||{})}; delete nd[my];
           const nt={...(x.t||{})}; delete nt[my];
-          await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr, ro: { ...(x.ro||{}), [i]: 1 } });
-
+                    await patch(`games/${gid}`, { d: nd, t: nt, rsvp: { ...(x.rsvp||{}), [my]: 0 } });
         };
       }
 
