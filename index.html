@@ -448,7 +448,7 @@
           const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
           if(others.includes(iso)) return toast('That date is already chosen');
           const tm  = ($('#orgTime').value||'').trim();
-          await patch(`games/${gid}`, { rsvp: {...x.rsvp,[my]:1}, d:{...x.d,[my]:iso}, t:{...x.t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[my]=tm; else delete nt[my]; return nt; })() });
+          await patch(`games/${gid}`, { rsvp: {...x.rsvp,[my]:1}, d:{...x.d,[my]:iso}, t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[my]=tm; else delete nt[my]; return nt; })() });
           toast('📅 Your hosting date is confirmed!');
         };
         $('#clearOrg').onclick = async ()=>{
