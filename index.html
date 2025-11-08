@@ -512,10 +512,6 @@
   $('#rsvpList').innerHTML = listHTML;
   // No copy-link buttons or handlers on Screen 5
   $('#rsvpList').onclick = null;
-
-        const i = e.target.getAttribute('data-copy'); if(i==null) return;
-        const url = `${baseUrl()}?game=${gid}&c=${i}`;
-        navigator.clipboard.writeText(url).then(()=> toast(COPY.organiser.link_copied)).catch(()=> toast('Copy failed'));
       };
 
       const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
