@@ -730,12 +730,58 @@
             ${(me===0)? (x.p||[]).map((n,i)=> i===host? '' : `<div class="list-item">${n}<div>${ (typeof x.sc?.[host]?.[i]==='number') || (x.sc?.[host]?.[i]?.o!=null) ? '✅ Scored':'⏳ Pending'}</div></div>`).join('')
                      : `<div class="list-item"><div>Group progress</div><div class="muted">${scoredCount}/${need} submitted</div></div>`}
           </div>
+                    ${(me===0) ? `
+          <div class="card" id="manageSlots" style="margin-top:12px">
+            <h4>Manage Hosting Slots</h4>
+            <div class="list">
+              ${(x.p||[]).map((n,i)=> i===0 ? '' : `
+                <div class="list-item">
+                  <div>
+                    <div><strong>${n}</strong></div>
+                    <div class="muted" style="font-size:.9rem">
+                      ${
+                        x.rsvp?.[i]===1
+                          ? fmtDateTime((x.d||{})[i], (x.t||{})[i])
+                          : (x.rsvp?.[i]===-1 ? 'Declined' : 'Pending')
+                      }
+                    </div>
+                  </div>
+                  ${ x.rsvp?.[i]===1 ? `<div><button class="btn-ghost" data-reopen="${i}">Reopen</button></div>` : ``}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ``}
           ${(me===0)? `<div style="margin-top:12px">${ canAdvance(x,host)? (x.rd < (x.p||[]).length-1
             ? `<button id="nextRound" class="btn btn-success">Next Dinner Party →</button>`
             : `<button id="finalise" class="btn btn-danger">🏆 View Final Results</button>` ) : `<div class="muted">Wait for all scores before progressing.</div>`}
           </div>` : ``}
         </div>`;
       render(s);
+      // Reopen handler (organiser only)
+      if (me===0) {
+        const ms = document.getElementById('manageSlots');
+        if (ms) {
+          ms.onclick = async (e)=>{
+            const idx = e.target.getAttribute('data-reopen');
+            if (idx == null) return;
+            const i = parseInt(idx, 10);
+            if (!Number.isInteger(i) || i <= 0) return;
+            if (!confirm(`Reopen selection for ${(x.p||[])[i]}?`)) return;
+
+            const nd = { ...(x.d||{}) }; delete nd[i];
+            const nt = { ...(x.t||{}) }; delete nt[i];
+            const nr = { ...(x.rsvp||{}) }; nr[i] = 0; // back to pending
+            try{
+              await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr });
+              toast('Reopened — the player can choose a new date.');
+            }catch(err){
+              console.error(err);
+              toast('❌ Could not reopen — check connection.');
+            }
+          };
+        }
+      }
 
       if(open && me!==host && scored==null){
         if(catMode){
