@@ -85,8 +85,8 @@
   const dbr = (path)=> ref(db, path);
   const readOnce = (path)=> get(child(dbr(''), path)).then(s=> s.exists()? s.val(): null);
   const patch = async (path, delta)=>{
-    const cur = await readOnce(path) || {};
-    await set(dbr(path), {...cur, ...delta});
+     // why: server-side merge prevents lost updates across clients
+    await update(dbr(path), delta);
   };
 
   // Utils
@@ -94,6 +94,7 @@
   const appRoot = $('#app');
   const qs = new URLSearchParams(location.search);
   const baseUrl = ()=> location.href.split('?')[0];
+  let offGameListener = null; // why: avoid accumulating onValue listeners
   const randId = ()=>'cq_'+Math.random().toString(36).slice(2,9);
   const fmtISO = d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
   const fmtDateTime = (iso, time)=>{
@@ -447,7 +448,7 @@
           const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
           if(others.includes(iso)) return toast('That date is already chosen');
           const tm  = ($('#orgTime').value||'').trim();
-          await patch(`games/${gid}`, { rsvp: {...x.rsvp,[my]:1}, d:{...x.d,[my]:iso}, t:{...x.t,[my]:tm||undefined} });
+          await patch(`games/${gid}`, { rsvp: {...x.rsvp,[my]:1}, d:{...x.d,[my]:iso}, t:{...x.t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[my]=tm; else delete nt[my]; return nt; })() });
           toast('📅 Your hosting date is confirmed!');
         };
         $('#clearOrg').onclick = async ()=>{
@@ -540,7 +541,7 @@
             if(disabled.has(iso)) return toast('That date is already chosen');
             const tm = (document.getElementById('timePick').value||'').trim();
             try{
-              await patch(`games/${gid}`, { rsvp:{...x.rsvp,[cid]:1}, d:{...x.d,[cid]:iso}, t:{...x.t,[cid]:tm||undefined} });
+              await patch(`games/${gid}`, { rsvp:{...x.rsvp,[cid]:1}, d:{...x.d,[cid]:iso}, t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })() });
               setSession({ gameId: gid, contestantId: cid });
               const u=new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid); history.replaceState({},'',`${location.pathname}?${u.toString()}`);
               toast(COPY.player.invitation_accepted);
@@ -563,7 +564,8 @@
 
   // Game screen
   function screenGame(gid){
-    onValue(dbr(`games/${gid}`),(snap)=>{
+    if (offGameListener) { offGameListener(); offGameListener = null; }
+    offGameListener = onValue(dbr(`games/${gid}`),(snap)=>{
       if(!snap.exists()) return;
       const x = snap.val();
       if(x.st!==2){ route(); return; }
