@@ -491,10 +491,17 @@
         };
       }
 
-      // list
-      const listHTML = (x.p||[]).map((n,i)=>{
-  const status = /* existing status text */;
-  return `
+     // list
+    const listHTML = (x.p||[]).map((n,i)=>{
+    const status = (() => {
+    const acc = x.rsvp?.[i];
+    const iso = (x.d||{})[i];
+    const tm  = (x.t||{})[i];
+    if (acc === 1)  return iso ? `Accepted — ${fmtDateTime(iso, tm)}` : 'Accepted';
+    if (acc === -1) return 'Declined';
+    return iso ? `Proposed — ${fmtDateTime(iso, tm)}` : 'Pending';
+  })();
+    return `
     <div class="list-item">
       <div>
         <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
@@ -502,8 +509,10 @@
       </div>
     </div>`;
 }).join('');
-      $('#rsvpList').innerHTML = listHTML;
-      $('#rsvpList').onclick = ()=> {};
+  $('#rsvpList').innerHTML = listHTML;
+  // No copy-link buttons or handlers on Screen 5
+  $('#rsvpList').onclick = null;
+
         const i = e.target.getAttribute('data-copy'); if(i==null) return;
         const url = `${baseUrl()}?game=${gid}&c=${i}`;
         navigator.clipboard.writeText(url).then(()=> toast(COPY.organiser.link_copied)).catch(()=> toast('Copy failed'));
