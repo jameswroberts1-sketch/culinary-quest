@@ -364,9 +364,6 @@
         <input id="guestName" placeholder="Guest name"/>
         <button id="addGuest" class="btn btn-ghost">+ Add</button>
       </div>
-       <p class="muted" style="margin-top:8px">
-        Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
-      </p>
       <div class="actions">
         <button id="toLinks" class="btn btn-success btn-lg">Create guest access links</button>
         <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
@@ -426,6 +423,9 @@
             <button class="btn-ghost" data-copy="${i}">Copy Invitation Link</button>
           </div>`).join('')}
       </div>
+      <p class="muted" style="margin-top:8px">
+        Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
+      </p>
       <div class="actions">
         <button id="toTracker" class="btn btn-success btn-lg">Next - Monitoring RSVP's</button>
         <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
