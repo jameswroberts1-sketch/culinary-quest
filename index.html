@@ -783,40 +783,52 @@
 
   // Router
 async function route(){
-  dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
+  // fresh query parse on every navigation
+  const qsp = new URLSearchParams(location.search);
+  dbg('route()', { qs: Object.fromEntries(qsp), session: getSession() });
 
   const s = getSession();
-  const gid = qs.get('game') || s.gameId;
-  const cid = (qs.get('c')!=null)? parseInt(qs.get('c'),10) : myId();
-  if(!gid){ screen1(); return; }
+  const gid = qsp.get('game') || s.gameId;
+  // prefer URL param if present; otherwise session; do NOT use global qs here
+  const cid = qsp.has('c') ? parseInt(qsp.get('c'), 10) :
+              (typeof s.contestantId === 'number' ? s.contestantId : myId());
 
-  // Paint immediately so there is never a blank screen
+  if (!gid) { screen1(); return; }
+
+  // show something immediately (avoid blank screen)
   render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
 
-  if(!window.__CQ_FB_READY__){
+  if (!window.__CQ_FB_READY__) {
     render(`
       <div class="card fade">
         ${logoSVG}
         <h2 class="title">Unable to load</h2>
-        <p class="muted">App not initialised. Please refresh or try again later.</p>
+        <p class="muted">App not initialised. Please refresh and try again.</p>
       </div>
     `);
     return;
   }
 
-  let done = false;
-  let off = null;
-  const finish = (fn)=>{ if(done) return false; done = true; if(off) { try{ off(); }catch{} } return fn(), true; };
+  try {
+    const x = await readOnce(`games/${gid}`);
+    if (!x) {
+      render(`
+        <div class="card fade">
+          ${logoSVG}
+          <h2 class="title">Game not found</h2>
+          <p class="muted">This game ID was not found. Ask the organiser to resend the link.</p>
+        </div>
+      `);
+      return;
+    }
 
-  // Shared router once we have a snapshot value
-  const routeWith = (x)=>{
-    // Persist session if missing
-    if(!s.gameId && gid) setSession({ gameId: gid, contestantId: (cid!=null?cid:0) });
+    // persist session if missing
+    if (!s.gameId) setSession({ gameId: gid, contestantId: (Number.isInteger(cid) ? cid : 0) });
 
-    if(x.st===1){
-      const pLen = (x.p||[]).length;
-      const isValidCid = (cid!=null) && Number.isInteger(cid) && cid>=0 && cid<pLen;
-      if(!isValidCid){
+    if (x.st === 1) {
+      const pLen = (x.p || []).length;
+      const isValidCid = Number.isInteger(cid) && cid >= 0 && cid < pLen;
+      if (!isValidCid) {
         render(`
           <div class="card fade">
             ${logoSVG}
@@ -826,66 +838,32 @@ async function route(){
         `);
         return;
       }
-      if((cid??0)===0) screen5(); else screenInvite(gid, cid??0);
-    }else if(x.st===2){
+      if ((cid ?? 0) === 0) {
+        screen5();                // organiser
+      } else {
+        screenInvite(gid, cid);   // guest invite flow
+      }
+    } else if (x.st === 2) {
       screenGame(gid);
-    }else if(x.st===4){
+    } else if (x.st === 4) {
       screenResults(gid);
-    }else{
+    } else {
       screen1();
     }
-  };
-
-  // Timeout safety net
-  const timeout = setTimeout(()=>{
-    if (finish(()=> {
-      render(`
-        <div class="card fade">
-          ${logoSVG}
-          <h2 class="title">Taking longer than usual…</h2>
-          <p class="muted">Please check your connection and try again.</p>
-        </div>
-      `);
-    })) {}
-  }, 8000);
-
-  // Path ref
-  const refPath = dbr(`games/${gid}`);
-
-  // 1) Fire a one-shot GET
-  get(refPath).then(snap=>{
-    if(!snap.exists()){ finish(()=> screen1()); return; }
-    finish(()=> routeWith(snap.val()));
-  }).catch(err=>{
-    console.error('[CQ] get() failed', err);
-    // don’t finish yet; let onValue or timeout handle it
-  });
-
-  // 2) Also attach a one-shot realtime read (whichever returns first wins)
-  off = onValue(refPath, (snap)=>{
-    if(!snap.exists()){ finish(()=> screen1()); return; }
-    finish(()=> routeWith(snap.val()));
-  }, (err)=>{
-    console.error('[CQ] onValue error', err);
-    finish(()=> {
-      const msg = (err && err.code === 'PERMISSION_DENIED')
-        ? `This game is not readable. Ask the organiser to adjust Firebase rules.`
-        : `Please check your connection and try again.`;
-      render(`
-        <div class="card fade">
-          ${logoSVG}
-          <h2 class="title">Unable to load</h2>
-          <p class="muted">${msg}</p>
-        </div>
-      `);
-    });
-  }, { onlyOnce: true });
-
-  // When we finish by any path, clear the timeout
-  const _origFinish = finish;
-  finish = (fn)=>{ const first = _origFinish(fn); if(first) clearTimeout(timeout); return first; };
+  } catch (err) {
+    console.error('[CQ] route() read failed', err);
+    const msg = (err && err.code === 'PERMISSION_DENIED')
+      ? `This game is not readable. Ask the organiser to adjust Firebase rules.`
+      : `Please check your connection and try again.`;
+    render(`
+      <div class="card fade">
+        ${logoSVG}
+        <h2 class="title">Unable to load</h2>
+        <p class="muted">${msg}</p>
+      </div>
+    `);
+  }
 }
-
 
   // DEV reset
   if(DEV_MODE){
