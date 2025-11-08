@@ -782,30 +782,59 @@
   }
 
   // Router
-  function route(){
-    dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
-    const s = getSession();
-    const gid = qs.get('game') || s.gameId;
-    const cid = (qs.get('c')!=null)? parseInt(qs.get('c'),10) : myId();
+  async function route(){
+  dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
+  const s = getSession();
+  const gid = qs.get('game') || s.gameId;
+  const cid = (qs.get('c')!=null)? parseInt(qs.get('c'),10) : myId();
 
-    if(!gid){ screen1(); return; }
+  if(!gid){ screen1(); return; }
 
-    onValue(dbr(`games/${gid}`),(snap)=>{
-      if(!snap.exists()){ screen1(); return; }
-      const x = snap.val();
-      if(!s.gameId && gid) setSession({ gameId: gid, contestantId: (cid!=null?cid:0) });
+  // Paint something immediately to avoid a blank screen
+  render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
 
-      if(x.st===1){
-        if((cid??0)===0) screen5(); else screenInvite(gid, cid??0);
-      }else if(x.st===2){
-        screenGame(gid);
-      }else if(x.st===4){
-        screenResults(gid);
-      }else{
-        screen1();
+  try{
+    const snap = await get(dbr(`games/${gid}`));
+    if(!snap.exists()){ screen1(); return; }
+    const x = snap.val();
+
+    // Persist session if not present
+    if(!s.gameId && gid) setSession({ gameId: gid, contestantId: (cid!=null?cid:0) });
+
+    if(x.st===1){
+      // Validate 'c' for guest links
+      const pLen = (x.p||[]).length;
+      const isValidCid = (cid!=null) && Number.isInteger(cid) && cid>=0 && cid<pLen;
+      if(!isValidCid){
+        render(`
+          <div class="card fade">
+            ${logoSVG}
+            <h2 class="title">Invalid Invitation Link</h2>
+            <p class="muted">This link doesn’t match any participant in this game.</p>
+          </div>
+        `);
+        return;
       }
-    }, {onlyOnce:true});
+      if((cid??0)===0) screen5(); else screenInvite(gid, cid??0);
+    }else if(x.st===2){
+      screenGame(gid);
+    }else if(x.st===4){
+      screenResults(gid);
+    }else{
+      screen1();
+    }
+  }catch(err){
+    console.error(err);
+    render(`
+      <div class="card fade">
+        ${logoSVG}
+        <h2 class="title">Unable to load</h2>
+        <p class="muted">Please check your connection and try again.</p>
+      </div>
+    `);
   }
+}
+
 
   // DEV reset
   if(DEV_MODE){
