@@ -110,6 +110,8 @@
   const appRoot = $('#app');
   const qs = new URLSearchParams(location.search);
   const baseUrl = ()=> location.href.split('?')[0];
+  const REV = new Date(document.lastModified || Date.now())
+  .toLocaleString([], { year:'2-digit', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
   const dbg = (...args) => console.debug('[CQ]', ...args);
   let offGameListener = null; // why: avoid accumulating onValue listeners
   const randId = ()=>'cq_'+Math.random().toString(36).slice(2,9);
@@ -201,6 +203,7 @@
     const s = `
     <div class="card fade">
       ${logoSVG}
+      <div class="muted" style="font-size:.75rem; text-align:right">Rev: ${REV}</div>
       <h1 class="title">🎩 Step right up, Master of Ceremonies — the stage is yours!</h1>
       <p class="subtitle">As the organiser, you’re hosting the grandest dining spectacle your friends have ever seen.</p>
       <div class="card" style="padding:12px">
