@@ -423,9 +423,10 @@
             <button class="btn-ghost" data-copy="${i}">Copy Invitation Link</button>
           </div>`).join('')}
       </div>
-      <p class="muted" style="margin-top:8px">
-        Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
-      </p>
+      <p class="muted" style="margin-top:12px; line-height:1.25">
+  Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
+</p>
+
       <div class="actions">
         <button id="toTracker" class="btn btn-success btn-lg">Next - Monitoring RSVP's</button>
         <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
@@ -519,6 +520,18 @@
       const unique = new Set(ds);
       const canStart = allAcc && unique.size===ds.length && ds.length>0;
       $('#startBtn').disabled = !canStart;
+      // Insert right after your existing lines on Screen 5:
+const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
+$('#startBtn').disabled = !allAcc;
+
+    // Debug-only: flag unexpected duplicate dates among accepted players
+    {
+      const accIdx = (x.p||[]).map((_,i)=> i).filter(i => x.rsvp?.[i]===1 && (x.d||{})[i]);
+      const dates = accIdx.map(i => (x.d||{})[i]);
+      const unique = new Set(dates);
+      if (accIdx.length !== unique.size) dbg('Duplicate date(s) detected among accepted players', { dates });
+    }
+
       $('#hint').style.display = canStart?'none':'block';
 
       $('#startBtn').onclick = async ()=>{
