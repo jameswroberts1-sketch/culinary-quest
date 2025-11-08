@@ -436,7 +436,7 @@
       if(i!=null){
         navigator.clipboard.writeText(w.links[+i]).then(()=> toast(COPY.organiser.link_copied)).catch(()=> toast('Copy failed'));
       }
-    }, { once:true });
+    });
     $('#toTracker').onclick = ()=> screen5();
     $('#btnCancel').onclick = ()=> { toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(),900); };
   }
@@ -493,13 +493,17 @@
 
       // list
       const listHTML = (x.p||[]).map((n,i)=>{
-        const status = x.rsvp?.[i]===1 ? `Accepted — ${fmtDateTime((x.d||{})[i], (x.t||{})[i])}` :
-                       x.rsvp?.[i]===-1 ? 'Declined' :
-                       (x.d||{})[i] ? `Selected — ${fmtDateTime((x.d||{})[i], (x.t||{})[i])} (not accepted)` : 'No date chosen';
-        return `<div class="list-item"><div><div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div><div class="muted" style="font-size:.9rem">${status}</div></div><div><button class="btn-ghost" data-copy="${i}">Copy Invitation Link</button></div></div>`;
-      }).join('');
+  const status = /* existing status text */;
+  return `
+    <div class="list-item">
+      <div>
+        <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
+        <div class="muted" style="font-size:.9rem">${status}</div>
+      </div>
+    </div>`;
+}).join('');
       $('#rsvpList').innerHTML = listHTML;
-      $('#rsvpList').onclick = (e)=>{
+      $('#rsvpList').onclick = ()=> {};
         const i = e.target.getAttribute('data-copy'); if(i==null) return;
         const url = `${baseUrl()}?game=${gid}&c=${i}`;
         navigator.clipboard.writeText(url).then(()=> toast(COPY.organiser.link_copied)).catch(()=> toast('Copy failed'));
