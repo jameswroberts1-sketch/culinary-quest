@@ -816,9 +816,8 @@ async function route(){
 
   const s = getSession();
   const gid = qsp.get('game') || s.gameId;
-  // prefer URL param if present; otherwise session; do NOT use global qs here
-  const cid = qsp.has('c') ? parseInt(qsp.get('c'), 10) :
-              (typeof s.contestantId === 'number' ? s.contestantId : myId());
+  const cid = qsp.has('c') ? parseInt(qsp.get('c'), 10)
+                           : (typeof s.contestantId === 'number' ? s.contestantId : myId());
 
   if (!gid) { screen1(); return; }
 
@@ -866,9 +865,9 @@ async function route(){
         return;
       }
       if ((cid ?? 0) === 0) {
-        screen5();                // organiser
+        screen5();            // organiser
       } else {
-        screenInvite(gid, cid);   // guest invite flow
+        screenInvite(gid, cid); // guest invite flow
       }
     } else if (x.st === 2) {
       screenGame(gid);
@@ -877,28 +876,29 @@ async function route(){
     } else {
       screen1();
     }
-  } } catch (err) {
-  console.error('[CQ] route() read failed', err);
-  const code = err?.code || 'UNKNOWN';
-  const msg =
-    code === 'PERMISSION_DENIED' ? 'This game is not readable. Ask the organiser to adjust Firebase rules.' :
-    code === 'NETWORK_REQUEST_FAILED' ? 'Network error. Check your connection and try again.' :
-    'Please check your connection and try again.';
+  } catch (err) {
+    console.error('[CQ] route() read failed', err);
+    const code = err?.code || 'UNKNOWN';
+    const msg =
+      code === 'PERMISSION_DENIED' ? 'This game is not readable. Ask the organiser to adjust Firebase rules.' :
+      code === 'NETWORK_REQUEST_FAILED' ? 'Network error. Check your connection and try again.' :
+      'Please check your connection and try again.';
 
-  render(`
-    <div class="card fade">
-      ${logoSVG}
-      <h2 class="title">Unable to load</h2>
-      <p class="muted">${msg}</p>
-      <p class="muted" style="font-size:.85rem">Error code: <code>${code}</code></p>
-      <div class="actions">
-        <button class="btn btn-primary" id="btnRetry">Retry</button>
+    render(`
+      <div class="card fade">
+        ${logoSVG}
+        <h2 class="title">Unable to load</h2>
+        <p class="muted">${msg}</p>
+        <p class="muted" style="font-size:.85rem">Error code: <code>${code}</code></p>
+        <div class="actions">
+          <button class="btn btn-primary" id="btnRetry">Retry</button>
+        </div>
       </div>
-    </div>
-  `);
-  const btn = document.getElementById('btnRetry');
-  if (btn) btn.onclick = ()=> route();
+    `);
+    const btn = document.getElementById('btnRetry');
+    if (btn) btn.onclick = ()=> route();
   }
+} // ← ensure this closing brace is present (route() ends here)
 
   // DEV reset
   if(DEV_MODE){
