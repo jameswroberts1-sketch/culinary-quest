@@ -184,9 +184,12 @@
   const getSession = ()=> { try{return JSON.parse(localStorage.getItem('cq_active_game')||'{}')}catch{return{}} };
   const setSession = (s)=> localStorage.setItem('cq_active_game', JSON.stringify(s));
   const clearSession = ()=> localStorage.removeItem('cq_active_game');
-  const myId = ()=> {
+    const myId = ()=> {
+    // Prefer URL param (fresh) over any stale session value
+    const qsp = new URLSearchParams(location.search);
+    if (qsp.has('c')) return parseInt(qsp.get('c'), 10);
     try { const s = getSession(); if (typeof s.contestantId==='number') return s.contestantId; } catch {}
-    const c = qs.get('c'); return c!=null ? parseInt(c,10) : null;
+    return null;
   };
 
   // Logo (SVG)
@@ -927,7 +930,9 @@ async function route(){
     }
 
     // persist session if missing
-    if (!s.gameId) setSession({ gameId: gid, contestantId: (Number.isInteger(cid) ? cid : 0) });
+        if (qsp.has('game') || qsp.has('c') || !s.gameId) {
+      setSession({ gameId: gid, contestantId: (Number.isInteger(cid) ? cid : 0) });
+    }
 
     if (x.st === 1) {
       const pLen = (x.p || []).length;
