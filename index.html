@@ -110,7 +110,7 @@
   let app, db;
   try{ app = initializeApp(firebaseConfig); db = getDatabase(app); window.__CQ_FB_READY__=true; }catch(e){ console.warn(e); window.__CQ_FB_READY__=false; }
   const dbr = (path)=> ref(db, path);
-  const readOnce = (path)=> get(child(dbr(''), path)).then(s=> s.exists()? s.val(): null);
+  const readOnce = (path)=> get(dbr(path)).then(s=> s.exists()? s.val(): null);
   const patch = async (path, delta)=>{
      // why: server-side merge prevents lost updates across clients
     await update(dbr(path), delta);
