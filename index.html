@@ -512,7 +512,6 @@
   $('#rsvpList').innerHTML = listHTML;
   // No copy-link buttons or handlers on Screen 5
   $('#rsvpList').onclick = null;
-      };
 
       const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
       const ds = Object.values(x.d||{});
