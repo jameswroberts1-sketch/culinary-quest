@@ -94,6 +94,7 @@
   const appRoot = $('#app');
   const qs = new URLSearchParams(location.search);
   const baseUrl = ()=> location.href.split('?')[0];
+  const dbg = (...args) => console.debug('[CQ]', ...args);
   let offGameListener = null; // why: avoid accumulating onValue listeners
   const randId = ()=>'cq_'+Math.random().toString(36).slice(2,9);
   const fmtISO = d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
@@ -180,6 +181,7 @@
 
   // Screen 1: Intro
   function screen1(){
+    dbg('screen1()');
     const s = `
     <div class="card fade">
       ${logoSVG}
@@ -363,6 +365,7 @@
 
   // Screen 4: Create game + show copy buttons
   async function screen4(){
+    dbg('screen4()', { gameId: window.__WIZ__?.gameId, players: window.__WIZ__?.players?.length });
     const w = window.__WIZ__;
     if(!w.gameId){
       w.gameId = randId();
@@ -564,8 +567,11 @@
 
   // Game screen
   function screenGame(gid){
+    dbg('screenGame()', { gid });
+    dbg('screenGame(): preparing listener', { gid });
     if (offGameListener) { offGameListener(); offGameListener = null; }
     offGameListener = onValue(dbr(`games/${gid}`),(snap)=>{
+      dbg('onValue(games)', { gid, exists: snap.exists() });
       if(!snap.exists()) return;
       const x = snap.val();
       if(x.st!==2){ route(); return; }
@@ -728,6 +734,7 @@
 
   // Router
   function route(){
+    dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
     const s = getSession();
     const gid = qs.get('game') || s.gameId;
     const cid = (qs.get('c')!=null)? parseInt(qs.get('c'),10) : myId();
