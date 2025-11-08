@@ -782,7 +782,7 @@
   }
 
   // Router
-  async function route(){
+async function route(){
   dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
   const s = getSession();
   const gid = qs.get('game') || s.gameId;
@@ -790,7 +790,7 @@
 
   if(!gid){ screen1(); return; }
 
-  // Paint something immediately to avoid a blank screen
+  // paint something immediately to avoid a blank screen
   render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
 
   try{
@@ -798,11 +798,10 @@
     if(!snap.exists()){ screen1(); return; }
     const x = snap.val();
 
-    // Persist session if not present
+    // persist session if missing
     if(!s.gameId && gid) setSession({ gameId: gid, contestantId: (cid!=null?cid:0) });
 
     if(x.st===1){
-      // Validate 'c' for guest links
       const pLen = (x.p||[]).length;
       const isValidCid = (cid!=null) && Number.isInteger(cid) && cid>=0 && cid<pLen;
       if(!isValidCid){
@@ -834,7 +833,6 @@
     `);
   }
 }
-
 
   // DEV reset
   if(DEV_MODE){
