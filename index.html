@@ -47,23 +47,28 @@
   display:flex;
   align-items:center;
   gap:8px;
-  width:100%;                    /* ensure chip fills the grid column */
+  width:100%;
+  min-height:36px;               /* ensures readable target on iOS */
   padding:8px 10px;
   border:1px solid rgba(0,0,0,.12);
   border-radius:999px;
   background:#fff;
-  white-space:nowrap;
+  white-space:normal;            /* allow wrapping on narrow screens */
 }
   .cat-chip span{
   flex:1 1 auto;
   min-width:0;                    /* allow ellipsis to work in flexbox */
   overflow:hidden;                /* truncation lives on the span only */
   text-overflow:ellipsis;
+  display:block;                 /* stable on iOS flexbox */
+  line-height:1.2;               /* avoids vertical clipping */
 }
   .cat-chip input{
-  flex:0 0 auto;                 /* checkbox should not stretch */
+  width:18px;
+  height:18px;
+  flex:0 0 18px;                 /* fixed basis so text always gets space */
   margin-left:2px;
-  margin-right:4px;
+  margin-right:8px;
   align-self:center;
 }
   .lock{font-size:.75rem;color:#9ca3af;margin-left:6px}
