@@ -782,7 +782,7 @@
   }
 
   // Router
-function route(){
+async function route(){
   dbg('route()', { qs: Object.fromEntries(new URLSearchParams(location.search)), session: getSession() });
   const s = getSession();
   const gid = qs.get('game') || s.gameId;
