@@ -44,33 +44,12 @@
   @media(min-width:560px){.cat-grid{grid-template-columns:1fr 1fr}}
   /* Replace your existing .cat-chip and .cat-chip span rules with exactly these */
   .cat-chip{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  width:100%;
-  min-height:36px;               /* ensures readable target on iOS */
-  padding:8px 10px;
-  border:1px solid rgba(0,0,0,.12);
-  border-radius:999px;
-  background:#fff;
-  white-space:normal;            /* allow wrapping on narrow screens */
-}
-  .cat-chip span{
-  flex:1 1 auto;
-  min-width:0;                    /* allow ellipsis to work in flexbox */
-  overflow:hidden;                /* truncation lives on the span only */
-  text-overflow:ellipsis;
-  display:block;                 /* stable on iOS flexbox */
-  line-height:1.2;               /* avoids vertical clipping */
-}
-  .cat-chip input{
-  width:18px;
-  height:18px;
-  flex:0 0 18px;                 /* fixed basis so text always gets space */
-  margin-left:2px;
-  margin-right:8px;
-  align-self:center;
-}
+    display:flex; align-items:center; gap:8px; width:100%;
+    min-height:36px; padding:8px 10px; border:1px solid rgba(0,0,0,.12);
+    border-radius:999px; background:#fff; white-space:normal;
+  }
+  .cat-chip span{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; display:block; line-height:1.2; }
+  .cat-chip input{ width:18px; height:18px; flex:0 0 18px; margin-left:2px; margin-right:8px; align-self:center; }
   .lock{font-size:.75rem;color:#9ca3af;margin-left:6px}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:1100;background:#111827;color:#fff;padding:.6rem 1rem;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-weight:700;opacity:0}
   @keyframes tin{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
@@ -82,11 +61,17 @@
   .slogan{margin-top:10px;font-weight:700;color:#7c5a00;background:#fff8db;border:2px solid var(--gold);border-radius:12px;padding:.7rem .9rem;opacity:.95;text-align:center}
   .banner{background:#dbeafe;border:1px solid #bfdbfe;border-radius:10px;padding:10px}
   .reset-btn{position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;padding:10px 16px;border-radius:999px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:2000;display:none}
+  /* DEV badge */
+  .dev-badge{position:fixed;top:10px;right:10px;background:#111827;color:#fff;border-radius:999px;padding:.25rem .6rem;font-weight:800;opacity:.85;z-index:3000;font-size:.8rem}
+  /* Unavailable chips under date picker */
+  .chip{display:inline-block;border:1px solid #e5e7eb;border-radius:999px;padding:.25rem .6rem;margin:.2rem .3rem;color:#6b7280;font-size:.85rem}
+  .chip.taken{opacity:.6;text-decoration:line-through}
 </style>
 </head>
 <body>
 <div class="container" id="app"></div>
 <div id="devReset" class="reset-btn">🧹 Reset Game Data</div>
+<div id="devBadge" class="dev-badge" style="display:none">DEV</div>
 
 <!-- Firebase (ESM) -->
 <script type="module">
@@ -135,12 +120,12 @@
     return dt + tm;
   };
   const votingUnlock = (iso,time)=>{
-  if (DEV_MODE) return null;     // TEMP: testing unlock
-  if(!iso) return null;
-  const d = new Date(iso + 'T' + (time||'00:00'));
-  const ms = d.getTime() + (time ? 6*3600e3 : 24*3600e3);
-  return new Date(ms);
-};
+    if (DEV_MODE) return null;     // TEMP: testing unlock
+    if(!iso) return null;
+    const d = new Date(iso + 'T' + (time||'00:00'));
+    const ms = d.getTime() + (time ? 6*3600e3 : 24*3600e3);
+    return new Date(ms);
+  };
 
   const toast = (msg, dur=1500)=>{
     const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
@@ -184,7 +169,7 @@
   const getSession = ()=> { try{return JSON.parse(localStorage.getItem('cq_active_game')||'{}')}catch{return{}} };
   const setSession = (s)=> localStorage.setItem('cq_active_game', JSON.stringify(s));
   const clearSession = ()=> localStorage.removeItem('cq_active_game');
-    const myId = ()=> {
+  const myId = ()=> {
     // Prefer URL param (fresh) over any stale session value
     const qsp = new URLSearchParams(location.search);
     if (qsp.has('c')) return parseInt(qsp.get('c'), 10);
@@ -215,7 +200,6 @@
 
   // Screen 1: Intro
   function screen1(){
-    dbg('screen1()');
     const s = `
     <div class="card fade">
       ${logoSVG}
@@ -245,7 +229,9 @@
     $('#btnContinue').onclick = ()=>{
       const name = ($('#organiserName').value||'').trim();
       if(!name){ toast('Please enter your name'); return; }
-      window.__WIZ__ = { name, mode:'s', cats:['Food'], customs:[], players:[name], links:[], gameId:null };
+      const today = fmtISO(new Date());
+      const plus90 = fmtISO(Date.now()+90*24*3600*1000);
+      window.__WIZ__ = { name, mode:'s', cats:['Food'], customs:[], players:[name], links:[], gameId:null, limFrom:today, limTo:plus90 };
       screen2();
     };
     $('#btnCancel').onclick = ()=>{ toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(), 900); };
@@ -349,7 +335,7 @@
     $('#btnCancel').onclick = ()=> { toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(),900); };
   }
 
-  // Screen 3: Add Guests (max 6 players total)
+  // Screen 3: Add Guests (max 6 players total) + Competition window
   function screen3(){
     const w = window.__WIZ__;
     const s = `
@@ -369,6 +355,22 @@
         <input id="guestName" placeholder="Guest name"/>
         <button id="addGuest" class="btn btn-ghost">+ Add</button>
       </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-bottom:6px">🗓️ Competition window</h3>
+        <div class="row">
+          <div style="flex:1">
+            <label class="muted">From</label>
+            <input id="limFrom" type="date" value="${w.limFrom||''}">
+          </div>
+          <div style="flex:1">
+            <label class="muted">To</label>
+            <input id="limTo" type="date" value="${w.limTo||''}">
+          </div>
+        </div>
+        <p class="muted" style="margin-top:6px">Guests can only choose dates inside this range.</p>
+      </div>
+
       <div class="actions">
         <button id="toLinks" class="btn btn-success btn-lg">Create guest access links</button>
         <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
@@ -390,6 +392,11 @@
       screen3();
     };
     $('#toLinks').onclick = ()=>{
+      const lf = ($('#limFrom').value||'').trim();
+      const lt = ($('#limTo').value||'').trim();
+      if(!lf || !lt){ toast('Set both start and end dates'); return; }
+      if(new Date(lf) > new Date(lt)){ toast('"From" must be before "To"'); return; }
+      w.limFrom = lf; w.limTo = lt;
       if(w.players.length<2){ toast('Add at least one guest'); return; }
       screen4();
     };
@@ -398,7 +405,6 @@
 
   // Screen 4: Create game + show copy buttons
   async function screen4(){
-    dbg('screen4()', { gameId: window.__WIZ__?.gameId, players: window.__WIZ__?.players?.length });
     const w = window.__WIZ__;
     if(!w.gameId){
       w.gameId = randId();
@@ -406,7 +412,8 @@
       const payload = {
         m, p: w.players,
         rsvp: Object.fromEntries(w.players.map((_,i)=>[i,0])),
-        d:{}, t:{}, ord:[], rd:0, st:1, sc:{}, cm:{}
+        d:{}, t:{}, ord:[], rd:0, st:1, sc:{}, cm:{},
+        lim: { from: w.limFrom, to: w.limTo } // why: bound all date picking
       };
       await set(dbr(`games/${w.gameId}`), payload);
       setSession({ gameId: w.gameId, contestantId: 0 });
@@ -429,8 +436,8 @@
           </div>`).join('')}
       </div>
       <p class="muted" style="margin-top:12px; line-height:1.25">
-  Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
-</p>
+        Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
+      </p>
 
       <div class="actions">
         <button id="toTracker" class="btn btn-success btn-lg">Next - Choose your hosting date</button>
@@ -470,6 +477,7 @@
       if(!snap.exists()) return;
       const x = snap.val();
       const my = 0;
+      const lim = x.lim || {};
       if(x.rsvp?.[my]===1){
         $('#orgControls').innerHTML = '';
       }else{
@@ -477,18 +485,25 @@
         $('#orgControls').innerHTML = `
           <div class="card" style="background:#fff8db;margin-top:6px">
             <h3 style="margin-bottom:6px">Pick your own hosting date & time</h3>
-            <div class="row"><input type="date" id="orgDate"/></div>
+            <div class="row"><input type="date" id="orgDate" ${lim.from?`min="${lim.from}"`:''} ${lim.to?`max="${lim.to}"`:''}/></div>
             <div class="row" style="margin-top:8px"><label class="muted">Optional time</label><input type="time" id="orgTime"/></div>
+            <div class="muted" style="margin-top:6px">${lim.from&&lim.to?`Window: ${lim.from} → ${lim.to}`:`No window set`}</div>
+            <div id="orgUnavailable" class="muted" style="margin-top:6px"></div>
             <div class="actions" style="margin-top:8px">
               <button id="acceptOrg" class="btn btn-secondary">✅ Accept Invitation</button>
               <button id="clearOrg" class="btn btn-ghost">Clear</button>
             </div>
           </div>`;
+        // Show taken dates as chips
+        const chips = others.map(d=>`<span class="chip taken">${d}</span>`).join('') || '<span class="chip">No conflicts yet</span>';
+        $('#orgUnavailable').innerHTML = `Unavailable: ${chips}`;
         $('#acceptOrg').onclick = async ()=>{
           const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
+          if(lim.from && iso < lim.from) return toast(`Pick on/after ${lim.from}`);
+          if(lim.to && iso > lim.to) return toast(`Pick on/before ${lim.to}`);
           if(others.includes(iso)) return toast('That date is already chosen');
           const tm  = ($('#orgTime').value||'').trim();
-                    await patch(`games/${gid}`, { 
+          await patch(`games/${gid}`, { 
             rsvp: { ...(x.rsvp||{}), [my]: 1 },
             d:    { ...(x.d||{}),    [my]: iso },
             t:    ( ()=>{ const nt = { ...(x.t||{}) }; if (tm) nt[my]=tm; else delete nt[my]; return nt; } )()
@@ -498,45 +513,43 @@
         $('#clearOrg').onclick = async ()=>{
           const nd={...(x.d||{})}; delete nd[my];
           const nt={...(x.t||{})}; delete nt[my];
-                    await patch(`games/${gid}`, { d: nd, t: nt, rsvp: { ...(x.rsvp||{}), [my]: 0 } });
+          await patch(`games/${gid}`, { d: nd, t: nt, rsvp: { ...(x.rsvp||{}), [my]: 0 } });
         };
       }
 
-     // list
-    const listHTML = (x.p||[]).map((n,i)=>{
-    const status = (() => {
-    const acc = x.rsvp?.[i];
-    const iso = (x.d||{})[i];
-    const tm  = (x.t||{})[i];
-    if (acc === 1)  return iso ? `Accepted — ${fmtDateTime(iso, tm)}` : 'Accepted';
-    if (acc === -1) return 'Declined';
-    return iso ? `Proposed — ${fmtDateTime(iso, tm)}` : 'Pending';
-  })();
-    return `
-    <div class="list-item">
-      <div>
-        <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
-        <div class="muted" style="font-size:.9rem">${status}</div>
-      </div>
-    </div>`;
-}).join('');
-  $('#rsvpList').innerHTML = listHTML;
-  // No copy-link buttons or handlers on Screen 5
-  $('#rsvpList').onclick = null;
+      // list
+      const listHTML = (x.p||[]).map((n,i)=>{
+        const status = (() => {
+          const acc = x.rsvp?.[i];
+          const iso = (x.d||{})[i];
+          const tm  = (x.t||{})[i];
+          if (acc === 1)  return iso ? `Accepted — ${fmtDateTime(iso, tm)}` : 'Accepted';
+          if (acc === -1) return 'Declined';
+          return iso ? `Proposed — ${fmtDateTime(iso, tm)}` : 'Pending';
+        })();
+        return `
+        <div class="list-item">
+          <div>
+            <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
+            <div class="muted" style="font-size:.9rem">${status}</div>
+          </div>
+        </div>`;
+      }).join('');
+      $('#rsvpList').innerHTML = listHTML;
 
       const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
       const ds = Object.values(x.d||{});
       const unique = new Set(ds);
       const canStart = allAcc && unique.size===ds.length && ds.length>0;
       $('#startBtn').disabled = !canStart;
-     
-    // Debug-only: flag unexpected duplicate dates among accepted players
-    {
-      const accIdx = (x.p||[]).map((_,i)=> i).filter(i => x.rsvp?.[i]===1 && (x.d||{})[i]);
-      const dates = accIdx.map(i => (x.d||{})[i]);
-      const unique = new Set(dates);
-      if (accIdx.length !== unique.size) dbg('Duplicate date(s) detected among accepted players', { dates });
-    }
+
+      // Debug-only duplicate check
+      {
+        const accIdx = (x.p||[]).map((_,i)=> i).filter(i => x.rsvp?.[i]===1 && (x.d||{})[i]);
+        const dates = accIdx.map(i => (x.d||{})[i]);
+        const unique = new Set(dates);
+        if (accIdx.length !== unique.size) dbg('Duplicate date(s) detected among accepted players', { dates });
+      }
 
       $('#hint').style.display = canStart?'none':'block';
 
@@ -558,131 +571,139 @@
 
   // Invite view for players (and organiser if not accepted)
   function screenInvite(gid, cid){
-  // Always show a loader; never let guests stare at a blank screen
-  render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
+    // Always show a loader; never let guests stare at a blank screen
+    render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
     readOnce(`games/${gid}`).then(x=>{
-    if(!x){
+      if(!x){
+        render(`
+          <div class="card fade">
+            ${logoSVG}
+            <h2 class="title">Game not found</h2>
+            <p class="muted">This invitation may be invalid or the game was removed.</p>
+            <div class="actions"><button class="btn btn-primary" id="btnRetry">Retry</button></div>
+          </div>
+        `);
+        $('#btnRetry').onclick = ()=> route();
+        return;
+      }
+
+      if(x.rsvp?.[cid]===1){
+        const org = (x.p||[])[0] || 'Organiser';
+        const iso = (x.d||{})[cid];
+        const tm  = (x.t||{})[cid];
+        render(`
+          <div class="card fade">
+            ${logoSVG}
+            <h2 class="title">You're all set!</h2>
+            <p class="subtitle">You are a registered participant in ${org}'s Culinary Quest.</p>
+            <div class="list" style="margin-top:8px">
+              <div class="list-item">
+                <div>
+                  <div><strong>Your hosting slot</strong></div>
+                  <div class="muted" style="font-size:.9rem">${fmtDateTime(iso, tm)}</div>
+                </div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px">If you do find that you need to change, contact ${org} to request a new selection window.</p>
+          </div>
+        `);
+        return;
+      }
+
+      // Not yet accepted → clearer UI + confirmation step
+      const lim = x.lim || {};
+      const disabledTaken = new Set(
+        Object.entries(x.d||{}).filter(([k,v])=> +k!==cid && v).map(([_,v])=> v)
+      );
       render(`
         <div class="card fade">
           ${logoSVG}
-          <h2 class="title">Game not found</h2>
-          <p class="muted">This invitation may be invalid or the game was removed.</p>
-          <div class="actions"><button class="btn btn-primary" id="btnRetry">Retry</button></div>
-        </div>
-      `);
-      $('#btnRetry').onclick = ()=> route();
-      return;
-    }
+          <h1 class="title">🍽️ Choose Your Hosting Slot</h1>
+          <p class="subtitle">Welcome${ (x.p||[])[cid]? ', '+x.p[cid] : '' }!</p>
 
-    if(x.rsvp?.[cid]===1){
-      const org = (x.p||[])[0] || 'Organiser';
-      const iso = (x.d||{})[cid];
-      const tm  = (x.t||{})[cid];
-      render(`
-        <div class="card fade">
-          ${logoSVG}
-          <h2 class="title">You're all set!</h2>
-          <p class="subtitle">You are a registered participant in ${org}'s Culinary Quest.</p>
-          <div class="list" style="margin-top:8px">
-            <div class="list-item">
-              <div>
-                <div><strong>Your hosting slot</strong></div>
-                <div class="muted" style="font-size:.9rem">${fmtDateTime(iso, tm)}</div>
-              </div>
+          <div class="card" style="margin-top:8px; min-height:380px">
+            <h3 style="margin-bottom:6px">📅 Hosting date</h3>
+            <div class="row"><input type="date" id="datePick" style="height:44px" ${lim.from?`min="${lim.from}"`:''} ${lim.to?`max="${lim.to}"`:''}></div>
+            <div id="unavail" class="muted" style="margin-top:6px"></div>
+            <p class="muted" style="margin-top:6px">${lim.from && lim.to ? `Allowed window: ${lim.from} → ${lim.to}` : 'No date window set by organiser yet.'}</p>
+
+            <h3 style="margin:12px 0 6px">⏰ Start time (optional)</h3>
+            <div class="row"><input type="time" id="timePick" placeholder="19:30" style="height:44px"></div>
+            <p class="muted" style="margin-top:6px">Tip: choose the time guests should arrive.</p>
+
+            <div class="actions" style="margin-top:12px">
+              <button id="btnAccept" class="btn btn-secondary">Continue</button>
+              <button id="btnDecline" class="btn btn-ghost">Decline</button>
             </div>
           </div>
-          <p class="muted" style="margin-top:8px">If you do find that you need to change, contact ${org} to request a new selection window.</p>
         </div>
       `);
-      return;
-    }
 
-    // Not yet accepted → clearer UI + confirmation step
-    const disabled = new Set(
-      Object.entries(x.d||{}).filter(([k,v])=> +k!==cid && v).map(([_,v])=> v)
-    );
-    render(`
-      <div class="card fade">
-        ${logoSVG}
-        <h1 class="title">🍽️ Choose Your Hosting Slot</h1>
-        <p class="subtitle">Welcome${ (x.p||[])[cid]? ', '+x.p[cid] : '' }!</p>
+      // Render "greyed" taken dates as chips below picker (visual hint + hard validation on submit)
+      const chips = [...disabledTaken].map(d=>`<span class="chip taken">${d}</span>`).join('') || '<span class="chip">No conflicts yet</span>';
+      $('#unavail').innerHTML = `Unavailable: ${chips}`;
 
-        <div class="card" style="margin-top:8px; min-height:380px">
-          <h3 style="margin-bottom:6px">📅 Hosting date</h3>
-          <div class="row"><input type="date" id="datePick" style="height:44px"></div>
-          <p class="muted" style="margin-top:6px">Only one host per date. Greyed-out days are already taken.</p>
+      setTimeout(()=>{
+        const acceptBtn = document.getElementById('btnAccept');
+        if(acceptBtn){
+          acceptBtn.addEventListener('click', ()=>{
+            const iso = (document.getElementById('datePick').value||'').trim();
+            if(!iso){ toast('Pick a date first'); return; }
+            if(lim.from && iso < lim.from){ toast(`Pick on/after ${lim.from}`); return; }
+            if(lim.to && iso > lim.to){ toast(`Pick on/before ${lim.to}`); return; }
+            if(disabledTaken.has(iso)) { toast('That date is already chosen'); return; }
+            const tm = (document.getElementById('timePick').value||'').trim();
 
-          <h3 style="margin:12px 0 6px">⏰ Start time (optional)</h3>
-          <div class="row"><input type="time" id="timePick" placeholder="19:30" style="height:44px"></div>
-          <p class="muted" style="margin-top:6px">Tip: choose the time guests should arrive.</p>
-
-          <div class="actions" style="margin-top:12px">
-            <button id="btnAccept" class="btn btn-secondary">Continue</button>
-            <button id="btnDecline" class="btn btn-ghost">Decline</button>
-          </div>
-        </div>
-      </div>
-    `);
-
-    setTimeout(()=>{
-      const acceptBtn = document.getElementById('btnAccept');
-      if(acceptBtn){
-        acceptBtn.addEventListener('click', ()=>{
-          const iso = (document.getElementById('datePick').value||'').trim();
-          if(!iso){ toast('Pick a date first'); return; }
-          if(disabled.has(iso)) { toast('That date is already chosen'); return; }
-          const tm = (document.getElementById('timePick').value||'').trim();
-
-          // Confirmation step
-          render(`
-            <div class="card fade">
-              ${logoSVG}
-              <h2 class="title">Confirm your hosting</h2>
-              <p class="subtitle">You are nominating <strong>${fmtDateTime(iso, tm)}</strong>.</p>
-              <div class="actions" style="margin-top:10px">
-                <button id="btnConfirm" class="btn btn-success btn-lg">Confirm</button>
-                <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
+            // Confirmation step
+            render(`
+              <div class="card fade">
+                ${logoSVG}
+                <h2 class="title">Confirm your hosting</h2>
+                <p class="subtitle">You are nominating <strong>${fmtDateTime(iso, tm)}</strong>.</p>
+                <div class="actions" style="margin-top:10px">
+                  <button id="btnConfirm" class="btn btn-success btn-lg">Confirm</button>
+                  <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
+                </div>
               </div>
-            </div>
-          `);
+            `);
 
-          document.getElementById('btnCancel').onclick = ()=> screenInvite(gid, cid);
-          document.getElementById('btnConfirm').onclick = async ()=>{
-            try{
-              await patch(`games/${gid}`, { 
-                rsvp:{...x.rsvp,[cid]:1},
-                d:{...x.d,[cid]:iso},
-                t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })()
-              });
-              setSession({ gameId: gid, contestantId: cid });
-              const u = new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid);
-              history.replaceState({},'',`${location.pathname}?${u.toString()}`);
-              toast(COPY.player.hosting_date_chosen || 'Hosting date saved');
-              setTimeout(()=> screenInvite(gid, cid), 200);
-            }catch(err){ console.error(err); toast('❌ Could not save — check connection.'); }
+            document.getElementById('btnCancel').onclick = ()=> screenInvite(gid, cid);
+            document.getElementById('btnConfirm').onclick = async ()=>{
+              try{
+                // Clear reopen flag if present
+                const newRo = { ...(x.ro||{}) }; if (newRo[cid] != null) delete newRo[cid];
+                await patch(`games/${gid}`, { 
+                  rsvp:{...x.rsvp,[cid]:1},
+                  d:{...x.d,[cid]:iso},
+                  t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })(),
+                  ...(Object.keys(newRo).length ? { ro:newRo } : { ro: null })
+                });
+                setSession({ gameId: gid, contestantId: cid });
+                const u = new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid);
+                history.replaceState({},'',`${location.pathname}?${u.toString()}`);
+                toast(COPY.player.hosting_date_chosen || 'Hosting date saved');
+                setTimeout(()=> screenInvite(gid, cid), 200);
+              }catch(err){ console.error(err); toast('❌ Could not save — check connection.'); }
             };
           });
-      }
+        }
 
-      const decBtn = document.getElementById('btnDecline');
-      if(decBtn){
-        decBtn.addEventListener('click', async ()=>{
-          const nd={...(x.d||{})}; delete nd[cid];
-          await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
-          toast('Declined');
-        });
-      }
-    },50);
-  });
+        const decBtn = document.getElementById('btnDecline');
+        if(decBtn){
+          decBtn.addEventListener('click', async ()=>{
+            const nd={...(x.d||{})}; delete nd[cid];
+            await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
+            toast('Declined');
+          });
+        }
+      },50);
+    });
   }
 
   // Game screen
   function screenGame(gid){
-    dbg('screenGame()', { gid });
-    dbg('screenGame(): preparing listener', { gid });
     if (offGameListener) { offGameListener(); offGameListener = null; }
     offGameListener = onValue(dbr(`games/${gid}`),(snap)=>{
-      dbg('onValue(games)', { gid, exists: snap.exists() });
       if(!snap.exists()) return;
       const x = snap.val();
       if(x.st!==2){ route(); return; }
@@ -740,7 +761,7 @@
             ${(me===0)? (x.p||[]).map((n,i)=> i===host? '' : `<div class="list-item">${n}<div>${ (typeof x.sc?.[host]?.[i]==='number') || (x.sc?.[host]?.[i]?.o!=null) ? '✅ Scored':'⏳ Pending'}</div></div>`).join('')
                      : `<div class="list-item"><div>Group progress</div><div class="muted">${scoredCount}/${need} submitted</div></div>`}
           </div>
-                    ${(me===0) ? `
+          ${(me===0) ? `
           <div class="card" id="manageSlots" style="margin-top:12px">
             <h4>Manage Hosting Slots</h4>
             <div class="list">
@@ -836,12 +857,12 @@
       }
     });
   }
-function canAdvance(x,host){
-  if (DEV_MODE) return true; // TEMP: testing only
-  const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
-  if(!vals.length) return false;
-  return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
-}
+  function canAdvance(x,host){
+    if (DEV_MODE) return true; // TEMP: testing only
+    const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
+    if(!vals.length) return false;
+    return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
+  }
 
   // Results
   function screenResults(gid){
@@ -890,108 +911,104 @@ function canAdvance(x,host){
   }
 
   // Router
-async function route(){
-  // fresh query parse on every navigation
-  const qsp = new URLSearchParams(location.search);
-  dbg('route()', { qs: Object.fromEntries(qsp), session: getSession() });
+  async function route(){
+    const qsp = new URLSearchParams(location.search);
+    const s = getSession();
+    const gid = qsp.get('game') || s.gameId;
+    const cid = qsp.has('c') ? parseInt(qsp.get('c'), 10)
+                             : (typeof s.contestantId === 'number' ? s.contestantId : myId());
 
-  const s = getSession();
-  const gid = qsp.get('game') || s.gameId;
-  const cid = qsp.has('c') ? parseInt(qsp.get('c'), 10)
-                           : (typeof s.contestantId === 'number' ? s.contestantId : myId());
+    if (!gid) { screen1(); return; }
 
-  if (!gid) { screen1(); return; }
+    // show something immediately (avoid blank screen)
+    render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
 
-  // show something immediately (avoid blank screen)
-  render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
-
-  if (!window.__CQ_FB_READY__) {
-    render(`
-      <div class="card fade">
-        ${logoSVG}
-        <h2 class="title">Unable to load</h2>
-        <p class="muted">App not initialised. Please refresh and try again.</p>
-      </div>
-    `);
-    return;
-  }
-
-  try {
-    const x = await readOnce(`games/${gid}`);
-    if (!x) {
+    if (!window.__CQ_FB_READY__) {
       render(`
         <div class="card fade">
           ${logoSVG}
-          <h2 class="title">Game not found</h2>
-          <p class="muted">This game ID was not found. Ask the organiser to resend the link.</p>
+          <h2 class="title">Unable to load</h2>
+          <p class="muted">App not initialised. Please refresh and try again.</p>
         </div>
       `);
       return;
     }
 
-    // persist session if missing
-        if (qsp.has('game') || qsp.has('c') || !s.gameId) {
-      setSession({ gameId: gid, contestantId: (Number.isInteger(cid) ? cid : 0) });
-    }
-
-    if (x.st === 1) {
-      const pLen = (x.p || []).length;
-      const isValidCid = Number.isInteger(cid) && cid >= 0 && cid < pLen;
-      if (!isValidCid) {
+    try {
+      const x = await readOnce(`games/${gid}`);
+      if (!x) {
         render(`
           <div class="card fade">
             ${logoSVG}
-            <h2 class="title">Invalid Invitation Link</h2>
-            <p class="muted">This link doesn’t match any participant in this game.</p>
+            <h2 class="title">Game not found</h2>
+            <p class="muted">This game ID was not found. Ask the organiser to resend the link.</p>
           </div>
         `);
         return;
       }
-      if ((cid ?? 0) === 0) {
-        screen5();            // organiser
-      } else {
-        screenInvite(gid, cid); // guest invite flow
+
+      // persist session if missing
+      if (qsp.has('game') || qsp.has('c') || !s.gameId) {
+        setSession({ gameId: gid, contestantId: (Number.isInteger(cid) ? cid : 0) });
       }
-    } else if (x.st === 2) {
-  // Only guests explicitly reopened by the organiser may (re)pick after start
-  const pLen = (x.p||[]).length;
-  const isValidCid = Number.isInteger(cid) && cid >= 0 && cid < pLen;
-  const status = isValidCid ? x.rsvp?.[cid] : undefined;
-  const reopened = isValidCid ? (x.ro?.[cid] === 1) : false;
 
-  if (isValidCid && cid > 0 && status === 0 && reopened) {
-    screenInvite(gid, cid);
-  } else {
-    screenGame(gid);
-  }
-} else if (x.st === 4) {
-      screenResults(gid);
-    } else {
-      screen1();
-    }
-  } catch (err) {
-    console.error('[CQ] route() read failed', err);
-    const code = err?.code || 'UNKNOWN';
-    const msg =
-      code === 'PERMISSION_DENIED' ? 'This game is not readable. Ask the organiser to adjust Firebase rules.' :
-      code === 'NETWORK_REQUEST_FAILED' ? 'Network error. Check your connection and try again.' :
-      'Please check your connection and try again.';
+      if (x.st === 1) {
+        const pLen = (x.p || []).length;
+        const isValidCid = Number.isInteger(cid) && cid >= 0 && cid < pLen;
+        if (!isValidCid) {
+          render(`
+            <div class="card fade">
+              ${logoSVG}
+              <h2 class="title">Invalid Invitation Link</h2>
+              <p class="muted">This link doesn’t match any participant in this game.</p>
+            </div>
+          `);
+          return;
+        }
+        if ((cid ?? 0) === 0) {
+          screen5();            // organiser
+        } else {
+          screenInvite(gid, cid); // guest invite flow
+        }
+      } else if (x.st === 2) {
+        const pLen = (x.p||[]).length;
+        const isValidCid = Number.isInteger(cid) && cid >= 0 && cid < pLen;
+        const status = isValidCid ? x.rsvp?.[cid] : undefined;
+        const reopened = isValidCid ? (x.ro?.[cid] === 1) : false;
 
-    render(`
-      <div class="card fade">
-        ${logoSVG}
-        <h2 class="title">Unable to load</h2>
-        <p class="muted">${msg}</p>
-        <p class="muted" style="font-size:.85rem">Error code: <code>${code}</code></p>
-        <div class="actions">
-          <button class="btn btn-primary" id="btnRetry">Retry</button>
+        if (isValidCid && cid > 0 && status === 0 && reopened) {
+          screenInvite(gid, cid);
+        } else {
+          screenGame(gid);
+        }
+      } else if (x.st === 4) {
+        screenResults(gid);
+      } else {
+        screen1();
+      }
+    } catch (err) {
+      console.error('[CQ] route() read failed', err);
+      const code = err?.code || 'UNKNOWN';
+      const msg =
+        code === 'PERMISSION_DENIED' ? 'This game is not readable. Ask the organiser to adjust Firebase rules.' :
+        code === 'NETWORK_REQUEST_FAILED' ? 'Network error. Check your connection and try again.' :
+        'Please check your connection and try again.';
+
+      render(`
+        <div class="card fade">
+          ${logoSVG}
+          <h2 class="title">Unable to load</h2>
+          <p class="muted">${msg}</p>
+          <p class="muted" style="font-size:.85rem">Error code: <code>${code}</code></p>
+          <div class="actions">
+            <button class="btn btn-primary" id="btnRetry">Retry</button>
+          </div>
         </div>
-      </div>
-    `);
-    const btn = document.getElementById('btnRetry');
-    if (btn) btn.onclick = ()=> route();
-  }
-} // ← ensure this closing brace is present (route() ends here)
+      `);
+      const btn = document.getElementById('btnRetry');
+      if (btn) btn.onclick = ()=> route();
+    }
+  } // route()
 
   // DEV reset
   if(DEV_MODE){
@@ -1003,6 +1020,7 @@ async function route(){
       try{ await remove(dbr(`games/${s.gameId}`)); }catch(e){ console.error(e); }
       clearSession(); alert('Cleared. Reloading…'); location.href=baseUrl();
     };
+    const b = $('#devBadge'); if (b) b.style.display='block';
   }
 
   // Bootstrap
@@ -1010,3 +1028,4 @@ async function route(){
 </script>
 </body>
 </html>
+
