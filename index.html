@@ -664,6 +664,120 @@ function screen5(){
   });
 }
 
+  // Game screen
+  function screenGame(gid){
+    if (offGameListener) { offGameListener(); offGameListener = null; }
+    offGameListener = onValue(dbr(`games/${gid}`),(snap)=>{
+      if(!snap.exists()) return;
+      const x = snap.val();
+      if(x.st!==2){ route(); return; }
+      const ord = x.ord||[]; const rd = x.rd||0; const host = ord.length? ord[rd] : rd;
+      const hostName = (x.p||[])[host] || '';
+      const me = myId();
+      const scored = x.sc?.[host]?.[me];
+      const openAt = votingUnlock((x.d||{})[host], (x.t||{})[host]);
+      const open = !openAt || new Date() >= openAt;
+
+      const catMode = (x.m?.sm==='c'); const cats = x.m?.cats || ['Food'];
+
+      const scoreBlock = (!open) ? `
+        <div class="card banner" style="margin-top:12px">
+          <h3>⏳ Voting not open yet</h3>
+          <p class="muted">${COPY.player.voting_not_open} ${openAt?`Opens ${openAt.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}.`:''}</p>
+        </div>
+      ` : (me===host ? `
+        <div class="card" style="background:#fff8db;margin-top:12px">🍽️ You’re tonight’s host — you don’t score yourself.</div>
+      ` : (scored==null ? (catMode ? `
+        <div class="card" style="background:${'var(--amber)'};margin-top:12px">
+          <h3>Category scoring — ${hostName}</h3>
+          <div id="catInputs">${cats.map(c=>`
+            <div style="margin-top:8px">
+              <label class="muted">${c}</label>
+              <input type="number" min="0" max="10" step="1" data-cat="${c}" />
+            </div>`).join('')}</div>
+          <div style="margin-top:8px"><label class="muted">Comment (optional)</label><textarea id="cmnt"></textarea></div>
+          <div style="margin-top:8px"><button id="submitCat" class="btn btn-secondary">Submit Category Scores</button></div>
+        </div>` : `
+        <div class="card" style="background:${'var(--amber)'};margin-top:12px">
+          <h3>Score ${hostName}</h3>
+          <div style="margin-top:8px"><label class="muted">Your score (0–10)</label><input id="simpleScore" type="number" min="0" max="10" step="1"/></div>
+          <div style="margin-top:8px"><label class="muted">Comment (optional)</label><textarea id="cmnt"></textarea></div>
+          <div style="margin-top:8px"><button id="submitSimple" class="btn btn-secondary">Submit Score</button></div>
+        </div>
+      `) : `<div class="card" style="background:#ecfccb;margin-top:12px">✅ You’ve submitted your score.</div>`));
+
+      const scoredCount = Object.values(x.sc?.[host]||{}).filter(s=> s!=null && (typeof s==='number' || (s&&s.o!=null))).length;
+      const need = Math.max(0, (x.p||[]).length - 1);
+
+      const s = `
+        <div class="card fade">
+          <h2 class="title">🍽️ Culinary Quest</h2>
+          <div class="list-item" style="margin-top:10px">
+            <div>
+              <div style="font-weight:700;font-size:1.25rem">${hostName}</div>
+              <div class="muted" style="margin-top:4px">${(x.d||{})[host]? `Date: ${fmtDateTime((x.d||{})[host], (x.t||{})[host])}` : 'Pending'}</div>
+            </div>
+            <div class="muted">Scored: <strong>${scoredCount}/${need}</strong></div>
+          </div>
+          ${scoreBlock}
+          <div style="margin-top:12px">
+            <h4>Scoring Status</h4>
+            ${(me===0)? (x.p||[]).map((n,i)=> i===host? '' : `<div class="list-item">${n}<div>${ (typeof x.sc?.[host]?.[i]==='number') || (x.sc?.[host]?.[i]?.o!=null) ? '✅ Scored':'⏳ Pending'}</div></div>`).join('')
+                     : `<div class="list-item"><div>Group progress</div><div class="muted">${scoredCount}/${need} submitted</div></div>`}
+          </div>
+          ${(me===0) ? `
+          <div class="card" id="manageSlots" style="margin-top:12px">
+            <h4>Manage Hosting Slots</h4>
+            <div class="list">
+              ${(x.p||[]).map((n,i)=> i===0 ? '' : `
+                <div class="list-item">
+                  <div>
+                    <div><strong>${n}</strong></div>
+                    <div class="muted" style="font-size:.9rem">
+                      ${
+                        x.rsvp?.[i]===1
+                          ? fmtDateTime((x.d||{})[i], (x.t||{})[i])
+                          : (x.rsvp?.[i]===-1 ? 'Declined' : 'Pending')
+                      }
+                    </div>
+                  </div>
+                  ${ x.rsvp?.[i]===1 ? `<div><button class="btn-ghost" data-reopen="${i}">Reopen</button></div>` : ``}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ``}
+          ${(me===0)? `<div style="margin-top:12px">${ canAdvance(x,host)? (x.rd < (x.p||[]).length-1
+            ? `<button id="nextRound" class="btn btn-success">Next Dinner Party →</button>`
+            : `<button id="finalise" class="btn btn-danger">🏆 View Final Results</button>` ) : `<div class="muted">Wait for all scores before progressing.</div>`}
+          </div>` : ``}
+        </div>`;
+      render(s);
+      // Reopen handler (organiser only)
+      if (me===0) {
+        const ms = document.getElementById('manageSlots');
+        if (ms) {
+          ms.onclick = async (e)=>{
+            const idx = e.target.getAttribute('data-reopen');
+            if (idx == null) return;
+            const i = parseInt(idx, 10);
+            if (!Number.isInteger(i) || i <= 0) return;
+            if (!confirm(`Reopen selection for ${(x.p||[])[i]}?`)) return;
+
+            const nd = { ...(x.d||{}) }; delete nd[i];
+            const nt = { ...(x.t||{}) }; delete nt[i];
+            const nr = { ...(x.rsvp||{}) }; nr[i] = 0; // back to pending
+            try{
+              await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr, ro: { ...(x.ro||{}), [i]: 1 } });
+              toast('Reopened — the player can choose a new date.');
+            }catch(err){
+              console.error(err);
+              toast('❌ Could not reopen — check connection.');
+            }
+          };
+        }
+      }
+
       if(open && me!==host && scored==null){
         if(catMode){
           $('#submitCat').onclick = async ()=>{
@@ -878,4 +992,3 @@ function screen5(){
 </script>
 </body>
 </html>
-
