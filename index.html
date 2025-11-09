@@ -66,6 +66,36 @@
   /* Unavailable chips under date picker */
   .chip{display:inline-block;border:1px solid #e5e7eb;border-radius:999px;padding:.25rem .6rem;margin:.2rem .3rem;color:#6b7280;font-size:.85rem}
   .chip.taken{opacity:.6;text-decoration:line-through}
+    /* === Tracker (Stitch-inspired) scoped tokens & utilities === */
+  .cqx * { box-sizing: border-box }
+  .cqx .t-hero     { font-weight: 800; letter-spacing: -0.01em }
+  .cqx .t-sub      { color: #6b7280 }
+  .cqx .k-card     { background: #fff; border: 1px solid #eef2f7; border-radius: 14px; }
+  .cqx .k-card-dim { background: #fff8db }
+  .cqx .k-pad      { padding: 16px }
+  .cqx .k-pad-lg   { padding: 20px }
+  .cqx .k-row      { display:flex; align-items:center; justify-content:space-between; gap:10px }
+  .cqx .k-col      { display:flex; flex-direction:column; gap:6px }
+  .cqx .k-gap      { display:grid; gap:10px }
+  .cqx .k-chip     { display:inline-block; border:1px solid #e5e7eb; border-radius:999px; padding:.25rem .6rem; margin:.2rem .3rem; color:#6b7280; font-size:.85rem }
+  .cqx .k-chip--taken { opacity:.55; text-decoration:line-through }
+  .cqx .k-badge    { display:inline-flex; align-items:center; gap:6px; font-size:.78rem; background:#f3f4f6; color:#374151; border-radius:999px; padding:.15rem .5rem }
+  .cqx .k-badge.ok { background:#ecfccb; color:#065f46 }
+  .cqx .k-badge.no { background:#fee2e2; color:#991b1b }
+  .cqx .k-badge.pn { background:#e5e7eb; color:#374151 }
+  .cqx .k-label    { font-size:.85rem; color:#6b7280 }
+  .cqx .k-input    { width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:.6rem .75rem }
+  .cqx .k-actions  { display:flex; gap:10px; flex-wrap:wrap }
+  .cqx .k-footer   { position:sticky; bottom:0; background:linear-gradient(#fff0,#fff 20%); padding-top:10px }
+
+  /* Buttons reuse your existing .btn styles; here we only add compact variants */
+  .cqx .btn-slim { padding:.65rem 1.0rem; border-radius:10px; font-weight:800 }
+
+  /* Responsive container for Tracker */
+  .cqx-wrap   { max-width: 900px; margin: 0 auto; }
+  .cqx-spc-md { margin-top: 10px }
+  .cqx-spc-lg { margin-top: 14px }
+   /* === End of Tracker (Stitch-inspired) scoped tokens & utilities === */
 </style>
 </head>
 <body>
@@ -456,249 +486,183 @@
   }
 
   // Screen 5: RSVP Tracker (organiser)
-  function screen5(){
-    const s = `
-    <div class="card fade">
-      ${logoSVG}
-      <h2 class="title">📅 RSVP Tracker</h2>
-      <p class="subtitle">Once everyone has accepted with a unique date, you can begin.</p>
-      <div id="orgControls"></div>
-      <div id="rsvpList" class="list" style="margin-top:10px"></div>
-      <div class="actions">
-        <button id="startBtn" class="btn btn-success btn-lg" disabled>Let the Games Begin</button>
-        <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
+function screen5(){
+  const s = `
+  <div class="cqx cqx-wrap fade">
+    <div class="k-card k-pad-lg">
+      <div class="k-col">
+        <h2 class="t-hero" style="font-size:1.6rem">📅 RSVP Tracker</h2>
+        <p class="t-sub">When everyone has <b>accepted</b> with a <b>unique date</b>, you can start the competition.</p>
       </div>
-      <p id="hint" class="muted" style="text-align:center;margin-top:8px">This will unlock when all have accepted and dates are unique.</p>
-    </div>`;
-    render(s);
+    </div>
 
-    const gid = getSession().gameId || qs.get('game');
-    onValue(dbr(`games/${gid}`), async snap=>{
-      if(!snap.exists()) return;
-      const x = snap.val();
-      const my = 0;
-      const lim = x.lim || {};
-      if(x.rsvp?.[my]===1){
-        $('#orgControls').innerHTML = '';
-      }else{
-        const others = Object.entries(x.d||{}).filter(([k,v])=> +k!==my && v).map(([_,v])=>v);
-        $('#orgControls').innerHTML = `
-          <div class="card" style="background:#fff8db;margin-top:6px">
-            <h3 style="margin-bottom:6px">Pick your own hosting date & time</h3>
-            <div class="row"><input type="date" id="orgDate" ${lim.from?`min="${lim.from}"`:''} ${lim.to?`max="${lim.to}"`:''}/></div>
-            <div class="row" style="margin-top:8px"><label class="muted">Optional time</label><input type="time" id="orgTime"/></div>
-            <div class="muted" style="margin-top:6px">${lim.from&&lim.to?`Window: ${lim.from} → ${lim.to}`:`No window set`}</div>
-            <div id="orgUnavailable" class="muted" style="margin-top:6px"></div>
-            <div class="actions" style="margin-top:8px">
-              <button id="acceptOrg" class="btn btn-secondary">✅ Accept Invitation</button>
-              <button id="clearOrg" class="btn btn-ghost">Clear</button>
+    <div id="orgControls" class="cqx-spc-md"></div>
+
+    <div class="k-card k-pad-lg cqx-spc-md">
+      <h3 style="font-weight:800;margin-bottom:6px">Participants</h3>
+      <div id="rsvpList" class="k-gap"></div>
+    </div>
+
+    <div class="k-footer cqx-spc-lg">
+      <div class="k-row">
+        <div class="t-sub" id="hint">This will unlock when all have accepted and dates are unique.</div>
+        <div class="k-actions">
+          <button id="startBtn" class="btn btn-success btn-lg btn-slim" disabled>Let the Games Begin</button>
+          <button id="btnCancel" class="btn btn-danger btn-lg btn-slim">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  render(s);
+
+  const gid = getSession().gameId || qs.get('game');
+  onValue(dbr(\`games/\${gid}\`), async snap=>{
+    if(!snap.exists()) return;
+    const x = snap.val();
+    const my = 0;
+    const lim = x.lim || {};
+
+    // --- Organiser self-pick card (only if organiser hasn't accepted yet) ---
+    if(x.rsvp?.[my]===1){
+      $('#orgControls').innerHTML = '';
+    } else {
+      const takenByOthers = Object.entries(x.d||{})
+        .filter(([k,v])=> +k!==my && v).map(([,v])=> v);
+
+      $('#orgControls').innerHTML = `
+        <div class="k-card k-card-dim k-pad-lg">
+          <div class="k-col">
+            <h3 style="font-weight:800">Your hosting date & time</h3>
+            <div class="k-gap" style="margin-top:6px">
+              <div>
+                <div class="k-label">Date</div>
+                <input id="orgDate" type="date" class="k-input"
+                  ${lim.from?`min="${lim.from}"`:''} ${lim.to?`max="${lim.to}"`:''}/>
+              </div>
+              <div>
+                <div class="k-label">Time (optional)</div>
+                <input id="orgTime" type="time" class="k-input"/>
+              </div>
+              <div class="t-sub">
+                ${lim.from&&lim.to ? `Allowed window: <b>${lim.from}</b> → <b>${lim.to}</b>` : `No window set`}
+              </div>
+              <div class="t-sub">
+                Unavailable:
+                ${
+                  takenByOthers.length
+                    ? takenByOthers.map(d=>`<span class="k-chip k-chip--taken">${d}</span>`).join('')
+                    : `<span class="k-chip">No conflicts yet</span>`
+                }
+              </div>
+              <div class="k-actions cqx-spc-md">
+                <button id="acceptOrg" class="btn btn-secondary btn-slim">✅ Accept Invitation</button>
+                <button id="clearOrg"  class="btn btn-ghost btn-slim">Clear</button>
+              </div>
             </div>
-          </div>`;
-        // Show taken dates as chips
-        const chips = others.map(d=>`<span class="chip taken">${d}</span>`).join('') || '<span class="chip">No conflicts yet</span>';
-        $('#orgUnavailable').innerHTML = `Unavailable: ${chips}`;
-        $('#acceptOrg').onclick = async ()=>{
-          const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
-          if(lim.from && iso < lim.from) return toast(`Pick on/after ${lim.from}`);
-          if(lim.to && iso > lim.to) return toast(`Pick on/before ${lim.to}`);
-          if(others.includes(iso)) return toast('That date is already chosen');
-          const tm  = ($('#orgTime').value||'').trim();
-          await patch(`games/${gid}`, { 
-            rsvp: { ...(x.rsvp||{}), [my]: 1 },
-            d:    { ...(x.d||{}),    [my]: iso },
-            t:    ( ()=>{ const nt = { ...(x.t||{}) }; if (tm) nt[my]=tm; else delete nt[my]; return nt; } )()
-          });
-          toast('📅 Your hosting date is confirmed!');
-        };
-        $('#clearOrg').onclick = async ()=>{
-          const nd={...(x.d||{})}; delete nd[my];
-          const nt={...(x.t||{})}; delete nt[my];
-          await patch(`games/${gid}`, { d: nd, t: nt, rsvp: { ...(x.rsvp||{}), [my]: 0 } });
-        };
-      }
-
-      // list
-      const listHTML = (x.p||[]).map((n,i)=>{
-        const status = (() => {
-          const acc = x.rsvp?.[i];
-          const iso = (x.d||{})[i];
-          const tm  = (x.t||{})[i];
-          if (acc === 1)  return iso ? `Accepted — ${fmtDateTime(iso, tm)}` : 'Accepted';
-          if (acc === -1) return 'Declined';
-          return iso ? `Proposed — ${fmtDateTime(iso, tm)}` : 'Pending';
-        })();
-        return `
-        <div class="list-item">
-          <div>
-            <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
-            <div class="muted" style="font-size:.9rem">${status}</div>
           </div>
         </div>`;
-      }).join('');
-      $('#rsvpList').innerHTML = listHTML;
 
-      const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
-      const ds = Object.values(x.d||{});
-      const unique = new Set(ds);
-      const canStart = allAcc && unique.size===ds.length && ds.length>0;
-      $('#startBtn').disabled = !canStart;
+      $('#acceptOrg').onclick = async ()=>{
+        const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
+        if(lim.from && iso < lim.from) return toast(\`Pick on/after \${lim.from}\`);
+        if(lim.to && iso > lim.to) return toast(\`Pick on/before \${lim.to}\`);
+        if(takenByOthers.includes(iso)) return toast('That date is already chosen');
+        const tm  = ($('#orgTime').value||'').trim();
 
-      // Debug-only duplicate check
-      {
-        const accIdx = (x.p||[]).map((_,i)=> i).filter(i => x.rsvp?.[i]===1 && (x.d||{})[i]);
-        const dates = accIdx.map(i => (x.d||{})[i]);
-        const unique = new Set(dates);
-        if (accIdx.length !== unique.size) dbg('Duplicate date(s) detected among accepted players', { dates });
-      }
-
-      $('#hint').style.display = canStart?'none':'block';
-
-      $('#startBtn').onclick = async ()=>{
-        const order = (x.p||[]).map((_,i)=>({i, dt:(x.d||{})[i]||''})).sort((a,b)=> a.dt===b.dt ? a.i-b.i : (!a.dt?1:!b.dt?-1:a.dt.localeCompare(b.dt))).map(z=>z.i);
-        const smode = x.m?.sm || 's'; const cats = x.m?.cats || ['Food'];
-        const initSc={}, initCm={};
-        (x.p||[]).forEach((_,h)=>{ initSc[h]={}; initCm[h]={}; (x.p||[]).forEach((__,s)=>{ if(s!==h){ initSc[h][s] = (smode==='s' ? null : { c:Object.fromEntries(cats.map(k=>[k,null])), o:null }); initCm[h][s]=''; } }); });
-        await patch(`games/${gid}`, { st:2, rd:0, ord:order, sc:initSc, cm:initCm });
-        setSession({ gameId: gid, contestantId: 0 });
-        route(); toast(COPY.organiser.game_started);
+        await patch(\`games/\${gid}\`, { 
+          rsvp: { ...(x.rsvp||{}), [my]: 1 },
+          d:    { ...(x.d||{}),    [my]: iso },
+          t:    ( ()=>{ const nt = { ...(x.t||{}) }; if (tm) nt[my]=tm; else delete nt[my]; return nt; } )()
+        });
+        toast('📅 Your hosting date is confirmed!');
       };
-      $('#btnCancel').onclick = async ()=>{
-        if(!confirm('Cancel setup?')) return;
-        await remove(dbr(`games/${gid}`)); clearSession(); location.href=baseUrl();
+
+      $('#clearOrg').onclick = async ()=>{
+        const nd={...(x.d||{})}; delete nd[my];
+        const nt={...(x.t||{})}; delete nt[my];
+        await patch(\`games/\${gid}\`, { d: nd, t: nt, rsvp: { ...(x.rsvp||{}), [my]: 0 } });
       };
-    });
-  }
+    }
 
-  // Invite view for players (and organiser if not accepted)
-  function screenInvite(gid, cid){
-    // Always show a loader; never let guests stare at a blank screen
-    render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
-    readOnce(`games/${gid}`).then(x=>{
-      if(!x){
-        render(`
-          <div class="card fade">
-            ${logoSVG}
-            <h2 class="title">Game not found</h2>
-            <p class="muted">This invitation may be invalid or the game was removed.</p>
-            <div class="actions"><button class="btn btn-primary" id="btnRetry">Retry</button></div>
-          </div>
-        `);
-        $('#btnRetry').onclick = ()=> route();
-        return;
-      }
+    // --- Participants list ---
+    const listHTML = (x.p||[]).map((n,i)=>{
+      const acc = x.rsvp?.[i];
+      const iso = (x.d||{})[i];
+      const tm  = (x.t||{})[i];
 
-      if(x.rsvp?.[cid]===1){
-        const org = (x.p||[])[0] || 'Organiser';
-        const iso = (x.d||{})[cid];
-        const tm  = (x.t||{})[cid];
-        render(`
-          <div class="card fade">
-            ${logoSVG}
-            <h2 class="title">You're all set!</h2>
-            <p class="subtitle">You are a registered participant in ${org}'s Culinary Quest.</p>
-            <div class="list" style="margin-top:8px">
-              <div class="list-item">
-                <div>
-                  <div><strong>Your hosting slot</strong></div>
-                  <div class="muted" style="font-size:.9rem">${fmtDateTime(iso, tm)}</div>
-                </div>
-              </div>
+      const [statusText, badgeCls] = (() => {
+        if (acc === 1)  return [ iso ? \`Accepted — \${fmtDateTime(iso, tm)}\` : 'Accepted', 'ok' ];
+        if (acc === -1) return [ 'Declined', 'no' ];
+        return [ iso ? \`Proposed — \${fmtDateTime(iso, tm)}\` : 'Pending', 'pn' ];
+      })();
+
+      return `
+        <div class="k-card k-pad">
+          <div class="k-row">
+            <div class="k-col">
+              <div style="font-weight:800">${i+1}. ${n} ${i===0?'<span class="badge">You</span>':''}</div>
+              <div class="k-badge ${badgeCls}">${statusText}</div>
             </div>
-            <p class="muted" style="margin-top:8px">If you do find that you need to change, contact ${org} to request a new selection window.</p>
+            ${
+              (i!==0 && x.rsvp?.[i]===1)
+                ? `<button class="btn btn-ghost btn-slim" data-reopen="${i}">Reopen</button>`
+                : ``
+            }
           </div>
-        `);
-        return;
-      }
+        </div>`;
+    }).join('');
+    $('#rsvpList').innerHTML = listHTML;
 
-      // Not yet accepted → clearer UI + confirmation step
-      const lim = x.lim || {};
-      const disabledTaken = new Set(
-        Object.entries(x.d||{}).filter(([k,v])=> +k!==cid && v).map(([_,v])=> v)
-      );
-      render(`
-        <div class="card fade">
-          ${logoSVG}
-          <h1 class="title">🍽️ Choose Your Hosting Slot</h1>
-          <p class="subtitle">Welcome${ (x.p||[])[cid]? ', '+x.p[cid] : '' }!</p>
+    // --- Start button gating ---
+    const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
+    const ds = Object.values(x.d||{});
+    const unique = new Set(ds);
+    const canStart = allAcc && unique.size===ds.length && ds.length>0;
+    $('#startBtn').disabled = !canStart;
+    $('#hint').style.display = canStart?'none':'block';
 
-          <div class="card" style="margin-top:8px; min-height:380px">
-            <h3 style="margin-bottom:6px">📅 Hosting date</h3>
-            <div class="row"><input type="date" id="datePick" style="height:44px" ${lim.from?`min="${lim.from}"`:''} ${lim.to?`max="${lim.to}"`:''}></div>
-            <div id="unavail" class="muted" style="margin-top:6px"></div>
-            <p class="muted" style="margin-top:6px">${lim.from && lim.to ? `Allowed window: ${lim.from} → ${lim.to}` : 'No date window set by organiser yet.'}</p>
+    // --- Actions ---
+    $('#startBtn').onclick = async ()=>{
+      const order = (x.p||[]).map((_,i)=>({i, dt:(x.d||{})[i]||''}))
+        .sort((a,b)=> a.dt===b.dt ? a.i-b.i : (!a.dt?1:!b.dt?-1:a.dt.localeCompare(b.dt)))
+        .map(z=>z.i);
+      const smode = x.m?.sm || 's'; const cats = x.m?.cats || ['Food'];
+      const initSc={}, initCm={};
+      (x.p||[]).forEach((_,h)=>{ initSc[h]={}; initCm[h]={}; (x.p||[]).forEach((__,s)=>{ if(s!==h){ initSc[h][s] = (smode==='s' ? null : { c:Object.fromEntries(cats.map(k=>[k,null])), o:null }); initCm[h][s]=''; } }); });
+      await patch(\`games/\${gid}\`, { st:2, rd:0, ord:order, sc:initSc, cm:initCm });
+      setSession({ gameId: gid, contestantId: 0 });
+      route(); toast('🎬 And we’re live! Round One of the Quest begins now.');
+    };
 
-            <h3 style="margin:12px 0 6px">⏰ Start time (optional)</h3>
-            <div class="row"><input type="time" id="timePick" placeholder="19:30" style="height:44px"></div>
-            <p class="muted" style="margin-top:6px">Tip: choose the time guests should arrive.</p>
+    $('#btnCancel').onclick = async ()=>{
+      if(!confirm('Cancel setup?')) return;
+      await remove(dbr(\`games/\${gid}\`)); clearSession(); location.href=baseUrl();
+    };
 
-            <div class="actions" style="margin-top:12px">
-              <button id="btnAccept" class="btn btn-secondary">Continue</button>
-              <button id="btnDecline" class="btn btn-ghost">Decline</button>
-            </div>
-          </div>
-        </div>
-      `);
+    // Organiser-only: reopen
+    const list = document.getElementById('rsvpList');
+    if(list){
+      list.onclick = async (e)=>{
+        const idx = e.target.getAttribute('data-reopen');
+        if (idx == null) return;
+        const i = parseInt(idx, 10);
+        if (!Number.isInteger(i) || i <= 0) return;
+        if (!confirm(\`Reopen selection for \${(x.p||[])[i]}?\`)) return;
 
-      // Render "greyed" taken dates as chips below picker (visual hint + hard validation on submit)
-      const chips = [...disabledTaken].map(d=>`<span class="chip taken">${d}</span>`).join('') || '<span class="chip">No conflicts yet</span>';
-      $('#unavail').innerHTML = `Unavailable: ${chips}`;
-
-      setTimeout(()=>{
-        const acceptBtn = document.getElementById('btnAccept');
-        if(acceptBtn){
-          acceptBtn.addEventListener('click', ()=>{
-            const iso = (document.getElementById('datePick').value||'').trim();
-            if(!iso){ toast('Pick a date first'); return; }
-            if(lim.from && iso < lim.from){ toast(`Pick on/after ${lim.from}`); return; }
-            if(lim.to && iso > lim.to){ toast(`Pick on/before ${lim.to}`); return; }
-            if(disabledTaken.has(iso)) { toast('That date is already chosen'); return; }
-            const tm = (document.getElementById('timePick').value||'').trim();
-
-            // Confirmation step
-            render(`
-              <div class="card fade">
-                ${logoSVG}
-                <h2 class="title">Confirm your hosting</h2>
-                <p class="subtitle">You are nominating <strong>${fmtDateTime(iso, tm)}</strong>.</p>
-                <div class="actions" style="margin-top:10px">
-                  <button id="btnConfirm" class="btn btn-success btn-lg">Confirm</button>
-                  <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
-                </div>
-              </div>
-            `);
-
-            document.getElementById('btnCancel').onclick = ()=> screenInvite(gid, cid);
-            document.getElementById('btnConfirm').onclick = async ()=>{
-              try{
-                // Clear reopen flag if present
-                const newRo = { ...(x.ro||{}) }; if (newRo[cid] != null) delete newRo[cid];
-                await patch(`games/${gid}`, { 
-                  rsvp:{...x.rsvp,[cid]:1},
-                  d:{...x.d,[cid]:iso},
-                  t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })(),
-                  ...(Object.keys(newRo).length ? { ro:newRo } : { ro: null })
-                });
-                setSession({ gameId: gid, contestantId: cid });
-                const u = new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid);
-                history.replaceState({},'',`${location.pathname}?${u.toString()}`);
-                toast(COPY.player.hosting_date_chosen || 'Hosting date saved');
-                setTimeout(()=> screenInvite(gid, cid), 200);
-              }catch(err){ console.error(err); toast('❌ Could not save — check connection.'); }
-            };
-          });
+        const nd = { ...(x.d||{}) }; delete nd[i];
+        const nt = { ...(x.t||{}) }; delete nt[i];
+        const nr = { ...(x.rsvp||{}) }; nr[i] = 0;
+        try{
+          await patch(\`games/\${gid}\`, { d: nd, t: nt, rsvp: nr, ro: { ...(x.ro||{}), [i]: 1 } });
+          toast('Reopened — the player can choose a new date.');
+        }catch(err){
+          console.error(err);
+          toast('❌ Could not reopen — check connection.');
         }
-
-        const decBtn = document.getElementById('btnDecline');
-        if(decBtn){
-          decBtn.addEventListener('click', async ()=>{
-            const nd={...(x.d||{})}; delete nd[cid];
-            await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
-            toast('Declined');
-          });
-        }
-      },50);
-    });
-  }
+      };
+    }
+  });
+}
 
   // Game screen
   function screenGame(gid){
