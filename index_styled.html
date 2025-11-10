@@ -84,46 +84,43 @@
   .reset-btn{position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;padding:10px 16px;border-radius:999px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:2000;display:none}
 </style>
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Playfair+Display:wght@400;700;800&display=swap" rel="stylesheet"/>
 
-<style id="cq-styled">
-/* ---- Scoped, non-destructive polish for index_styled.html ---- */
-.styled { font-family: "Plus Jakarta Sans", -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; line-height:1.45; }
-.styled .title{ letter-spacing:-.01em; font-weight:800; }
-.styled .subtitle{ color:#4b5563 }
-.styled .card{ border:1px solid #eceff3; border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.08) }
-.styled .list-item{ border-radius:12px; border:1px solid #eef2f7 }
-.styled .btn{ transition:transform .06s ease, box-shadow .15s ease, background-color .15s ease; font-weight:800; letter-spacing:.015em }
-.styled .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 22px rgba(0,0,0,.12) }
-.styled .btn:active{ transform:translateY(0) }
-.styled input, .styled textarea, .styled select{ border-radius:12px; border:1px solid #e5e7eb; background:#fff; outline:none }
-.styled input:focus, .styled textarea:focus, .styled select:focus{ border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.15) }
-.styled .badge{ border-radius:10px; padding:.1rem .45rem }
-.styled .actions { gap:14px }
-.styled .muted{ color:#6b7280 }
-.styled .slogan{ border-width:2px; border-color:#f59e0b }
-/* chips */
-.styled .chip{ display:inline-block; border:1px solid #e5e7eb; border-radius:999px; padding:.25rem .6rem; margin:.2rem .3rem; color:#6b7280; font-size:.85rem }
-.styled .chip.taken{ opacity:.6; text-decoration:line-through }
-/* ---- Start screen hero styles (scoped) ---- */
-.styled .hero-wrap{ position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px }
-.styled .hero-bg{ position:absolute; inset:0; background-position:center; background-size:cover; filter:brightness(.68) }
-.styled .hero-overlay{ position:absolute; inset:0;
-  background: radial-gradient(1200px 800px at 70% 20%, rgba(255,215,130,.18), transparent 40%),
-              radial-gradient(1000px 700px at 20% 80%, rgba(255,180,60,.12), transparent 40%),
-              linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.75));
+
+<style id="cq-styled-menu">
+/* ---- Scoped fine-dining start screen ---- */
+.styled { font-family: "Cormorant Garamond", Georgia, serif; color:#1f2937; }
+.styled .menu-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:28px; background:#fbf9f3; }
+.styled .menu-card{ width:100%; max-width:760px; background:#fffdf8; border:1.25px solid #e7e2d6; border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.06); padding:26px 24px 22px; }
+.styled .menu-head{ text-align:center; padding:6px 0 2px }
+.styled .menu-emblem{ width:56px; height:56px; margin:0 auto 6px; opacity:.55 }
+.styled .menu-title{ font-family:"Playfair Display", Georgia, serif; font-weight:800; letter-spacing:.22em; text-transform:uppercase; font-size:42px; color:#111827 }
+.styled .menu-section{ text-align:center; margin-top:12px }
+.styled .section-label{ font-weight:600; letter-spacing:.38em; text-transform:uppercase; color:#6b7280; font-size:.9rem }
+.styled .item-title{ font-family:"Playfair Display", Georgia, serif; text-transform:uppercase; letter-spacing:.18em; margin-top:6px; color:#1f2937 }
+.styled .item-desc{ font-style:italic; color:#4b5563; margin-top:2px }
+.styled .menu-divider{ margin:18px 0; height:1.5px; background:#2f2f2f; position:relative }
+.styled .menu-divider::before,.styled .menu-divider::after{
+  content:""; position:absolute; top:50%; transform:translateY(-50%) rotate(45deg);
+  width:10px; height:10px; border:2px solid #2f2f2f; background:transparent;
 }
-.styled .hero-inner{ position:relative; z-index:1; width:100%; max-width:920px }
-.styled .hero-card{ background:rgba(255,255,255,.9); border:1px solid #eceff3; border-radius:18px; box-shadow:0 24px 60px rgba(0,0,0,.18); overflow:hidden }
-.styled .hero-header{ padding:22px 22px 0 22px; text-align:center }
-.styled .hero-title{ font-size:2rem; font-weight:800; color:#1f2937; letter-spacing:-.01em }
-.styled .hero-sub{ color:#4b5563; margin-top:6px }
-.styled .hero-body{ padding:18px 22px }
-.styled .hero-ol{ margin:8px 0 0 20px; line-height:1.55; color:#374151 }
-.styled .hero-footer{ display:flex; gap:12px; justify-content:center; padding:18px 22px 22px 22px }
-.styled .hint{ font-size:.85rem; color:#6b7280; margin-top:6px; text-align:center }
-.styled .name-note{ font-size:.85rem; color:#6b7280; margin-top:6px }
-@media (min-width: 720px){ .styled .hero-title{ font-size:2.2rem } }
+.styled .menu-divider::before{ left:14px }
+.styled .menu-divider::after{ right:14px }
+.styled .menu-foot{ margin-top:14px; display:flex; flex-direction:column; align-items:center; gap:10px }
+.styled .menu-note{ font-size:.9rem; color:#6b7280 }
+.styled .menu-actions{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:6px }
+.styled .menu-input{ width:100%; max-width:440px; border:1px solid #e7e2d6; padding:.7rem .85rem; border-radius:12px; background:#fff; outline:none;
+  transition: box-shadow .15s ease, border-color .15s ease }
+.styled .menu-input:focus{ border-color:#111827; box-shadow:0 0 0 3px rgba(17,24,39,.08) }
+.styled .btn{ font-weight:800; letter-spacing:.02em; border-radius:10px; padding:.8rem 1.2rem; }
+.styled .btn-elegant{ background:#111827; color:#fff; }
+.styled .btn-elegant:hover{ filter:brightness(1.05) }
+.styled .btn-ghost{ background:#fff; border:1px solid #e7e2d6; color:#374151 }
+@media (min-width: 820px){
+  .styled .menu-card{ padding:36px 40px 28px }
+  .styled .menu-title{ font-size:46px }
+}
 </style>
 
 </head>
@@ -260,47 +257,53 @@
   
 function screen1(){
   dbg('screen1()');
-  const heroImg = "https://images.unsplash.com/photo-1484723091739-30a097e8f929?q=80&w=1920&auto=format&fit=crop"; // replace with your own asset if desired
   const s = `
-    <div class="hero-wrap">
-      <div class="hero-bg" style="background-image:url('${heroImg}')"></div>
-      <div class="hero-overlay"></div>
+    <div class="menu-wrap">
+      <div class="menu-card fade">
+        <div class="menu-head">
+          
+<svg class="menu-emblem" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+  <path d="M18 36c8-2 12-10 14-20 2 10 6 18 14 20-8 2-12 10-14 20-2-10-6-18-14-20z" stroke="#6b7280" stroke-width="2" />
+</svg>
 
-      <div class="hero-inner">
-        <div class="hero-card fade">
-          <div class="hero-header">
-            ${logoSVG}
-            <div class="muted" style="font-size:.75rem; text-align:right">Rev: ${REV}</div>
-            <h1 class="hero-title">Welcome, Master of Ceremonies</h1>
-            <p class="hero-sub">Define the rules. Invite your guests. Let the best host win.</p>
-          </div>
+          <div class="muted" style="font-size:.75rem;text-align:right">Rev: ${REV}</div>
+          <div class="menu-title">Menu</div>
+        </div>
 
-          <div class="hero-body">
-            <p>How it works:</p>
-            <ol class="hero-ol">
-              <li><b>Pick a scoring style</b> — a simple 0–10, or category-by-category.</li>
-              <li><b>Add your contestants</b> — each receives a personal invite link.</li>
-              <li><b>They RSVP with a unique date</b> — every player hosts once.</li>
-              <li><b>After the final dinner</b> — reveal the results and crown the winner.</li>
-            </ol>
+        <div class="menu-section" style="margin-top:10px">
+          <div class="section-label">Starter</div>
+          <div class="item-title">Welcome to Culinary Quest</div>
+          <div class="item-desc">A friendly fine‑dining competition — simple, elegant, and fun.</div>
+        </div>
 
-            <div class="row" style="margin-top:14px; justify-content:center">
-              <input id="organiserName" placeholder="Your name (visible to all players)" style="max-width:460px"/>
+        <div class="menu-divider"></div>
+
+        <div class="menu-section">
+          <div class="section-label">Main</div>
+          <div class="item-title">How It Works</div>
+          <div class="item-desc">Choose scoring, add contestants, each picks a unique hosting date.</div>
+          <div class="item-desc">After the final dinner, reveal results and crown the winner.</div>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-section">
+          <div class="section-label">Dessert</div>
+          <div class="item-title">Your Host Name</div>
+          <div class="item-desc">This is the name your guests will see throughout the competition.</div>
+          <div class="menu-foot">
+            <input id="organiserName" class="menu-input" placeholder="Your name (visible to all players)"/>
+            <div class="menu-actions">
+              <button id="btnContinue" class="btn btn-elegant">Begin Planning</button>
+              <button id="btnCancel" class="btn btn-ghost">Cancel</button>
             </div>
-            <div class="name-note">Please enter <b>your</b> name as you want others to see it.</div>
           </div>
-
-          <div class="hero-footer">
-            <button id="btnContinue" class="btn btn-success btn-lg">Begin planning</button>
-            <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
-          </div>
-          <p class="hint">You can adjust settings before starting the competition.</p>
         </div>
       </div>
     </div>`;
 
   render(s);
-  // keep behaviour identical
+  // Keep behaviour unchanged
   $('#btnContinue').onclick = ()=>{
     const name = ($('#organiserName').value||'').trim();
     if(!name){ toast('Please enter your name'); return; }
