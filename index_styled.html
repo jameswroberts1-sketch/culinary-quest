@@ -88,61 +88,42 @@
 
 <style id="cq-styled">
 /* ---- Scoped, non-destructive polish for index_styled.html ---- */
-.styled {
-  /* Gentle textured background; keeps your existing gradients visible */
-  font-family: "Plus Jakarta Sans", -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
-  line-height: 1.45;
-}
-.styled .title{
-  letter-spacing:-.01em;
-  font-weight:800;
-}
+.styled { font-family: "Plus Jakarta Sans", -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial; line-height:1.45; }
+.styled .title{ letter-spacing:-.01em; font-weight:800; }
 .styled .subtitle{ color:#4b5563 }
-.styled .card{
-  border:1px solid #eceff3;
-  border-radius:16px;
-  box-shadow:0 10px 28px rgba(0,0,0,.08);
-}
-.styled .list-item{
-  border-radius:12px;
-  border:1px solid #eef2f7;
-}
-.styled .btn{
-  transition:transform .06s ease, box-shadow .15s ease, background-color .15s ease;
-  font-weight:800;
-  letter-spacing:.015em;
-}
+.styled .card{ border:1px solid #eceff3; border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.08) }
+.styled .list-item{ border-radius:12px; border:1px solid #eef2f7 }
+.styled .btn{ transition:transform .06s ease, box-shadow .15s ease, background-color .15s ease; font-weight:800; letter-spacing:.015em }
 .styled .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 22px rgba(0,0,0,.12) }
 .styled .btn:active{ transform:translateY(0) }
-.styled .btn-success{ background:#16a34a; }
-.styled .btn-danger{ background:#dc2626; }
-.styled .btn-secondary{ background:#ea580c; }
-.styled input, .styled textarea, .styled select{
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  outline:none;
-}
-.styled input:focus, .styled textarea:focus, .styled select:focus{
-  border-color:#f59e0b;
-  box-shadow:0 0 0 3px rgba(245,158,11,.15);
-}
-.styled .badge{
-  border-radius:10px;
-  padding:.1rem .45rem;
-}
+.styled input, .styled textarea, .styled select{ border-radius:12px; border:1px solid #e5e7eb; background:#fff; outline:none }
+.styled input:focus, .styled textarea:focus, .styled select:focus{ border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.15) }
+.styled .badge{ border-radius:10px; padding:.1rem .45rem }
 .styled .actions { gap:14px }
 .styled .muted{ color:#6b7280 }
-.styled .slogan{
-  border-width:2px;
-  border-color:#f59e0b;
-}
-/* “chips” under date pickers */
-.styled .chip{
-  display:inline-block; border:1px solid #e5e7eb; border-radius:999px;
-  padding:.25rem .6rem; margin:.2rem .3rem; color:#6b7280; font-size:.85rem
-}
+.styled .slogan{ border-width:2px; border-color:#f59e0b }
+/* chips */
+.styled .chip{ display:inline-block; border:1px solid #e5e7eb; border-radius:999px; padding:.25rem .6rem; margin:.2rem .3rem; color:#6b7280; font-size:.85rem }
 .styled .chip.taken{ opacity:.6; text-decoration:line-through }
+/* ---- Start screen hero styles (scoped) ---- */
+.styled .hero-wrap{ position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px }
+.styled .hero-bg{ position:absolute; inset:0; background-position:center; background-size:cover; filter:brightness(.68) }
+.styled .hero-overlay{ position:absolute; inset:0;
+  background: radial-gradient(1200px 800px at 70% 20%, rgba(255,215,130,.18), transparent 40%),
+              radial-gradient(1000px 700px at 20% 80%, rgba(255,180,60,.12), transparent 40%),
+              linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.75));
+}
+.styled .hero-inner{ position:relative; z-index:1; width:100%; max-width:920px }
+.styled .hero-card{ background:rgba(255,255,255,.9); border:1px solid #eceff3; border-radius:18px; box-shadow:0 24px 60px rgba(0,0,0,.18); overflow:hidden }
+.styled .hero-header{ padding:22px 22px 0 22px; text-align:center }
+.styled .hero-title{ font-size:2rem; font-weight:800; color:#1f2937; letter-spacing:-.01em }
+.styled .hero-sub{ color:#4b5563; margin-top:6px }
+.styled .hero-body{ padding:18px 22px }
+.styled .hero-ol{ margin:8px 0 0 20px; line-height:1.55; color:#374151 }
+.styled .hero-footer{ display:flex; gap:12px; justify-content:center; padding:18px 22px 22px 22px }
+.styled .hint{ font-size:.85rem; color:#6b7280; margin-top:6px; text-align:center }
+.styled .name-note{ font-size:.85rem; color:#6b7280; margin-top:6px }
+@media (min-width: 720px){ .styled .hero-title{ font-size:2.2rem } }
 </style>
 
 </head>
@@ -276,634 +257,59 @@
   function render(html){ appRoot.innerHTML = html; }
 
   // Screen 1: Intro
-  function screen1(){
-    dbg('screen1()');
-    const s = `
-    <div class="card fade">
-      ${logoSVG}
-      <div class="muted" style="font-size:.75rem; text-align:right">Rev: ${REV}</div>
-      <h1 class="title">🎩 Step right up, Master of Ceremonies — the stage is yours!</h1>
-      <p class="subtitle">As the organiser, you’re hosting the grandest dining spectacle your friends have ever seen.</p>
-      <div class="card" style="padding:12px">
-        <p>Here’s how to roll out the red tablecloth:</p>
-        <ol style="margin:8px 0 0 18px;line-height:1.55">
-          <li>🎯 Choose your scoring style — single score or category-by-category showdown.</li>
-          <li>👥 Add your contestants and send their personalised invite links.</li>
-          <li>📅 Wait for RSVPs as each player locks in a unique hosting date.</li>
-        </ol>
-        <p style="margin-top:10px">Once the line-up is complete, review the schedule and hit <b>Start Competition</b> to launch your Quest.</p>
-        <p style="margin-top:10px">💡 Optional twist: invite each player to contribute equally towards a grand prize.</p>
-        <p style="margin-top:10px">Now tell us your name and let’s begin.</p>
-      </div>
-      <div class="row" style="margin-top:8px;justify-content:center">
-        <input id="organiserName" placeholder="Your name" style="max-width:420px"/>
-      </div>
-      <div class="actions">
-        <button id="btnContinue" class="btn btn-success btn-lg">Continue</button>
-        <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
-      </div>
-    </div>`;
-    render(s);
-    $('#btnContinue').onclick = ()=>{
-      const name = ($('#organiserName').value||'').trim();
-      if(!name){ toast('Please enter your name'); return; }
-      window.__WIZ__ = { name, mode:'s', cats:['Food'], customs:[], players:[name], links:[], gameId:null };
-      screen2();
-    };
-    $('#btnCancel').onclick = ()=>{ toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(), 900); };
-  }
+  
+function screen1(){
+  dbg('screen1()');
+  const heroImg = "https://images.unsplash.com/photo-1484723091739-30a097e8f929?q=80&w=1920&auto=format&fit=crop"; // replace with your own asset if desired
+  const s = `
+    <div class="hero-wrap">
+      <div class="hero-bg" style="background-image:url('${heroImg}')"></div>
+      <div class="hero-overlay"></div>
 
-  // Screen 2: Scoring Mode + categories
-  function screen2(){
-    const w = window.__WIZ__;
-    const catAll = ['Food','Menu','Table Setting','Drinks','Entertainment'];
-    const isEnabled = (c)=> w.cats.includes(c);
-
-    const catItem = (c, locked)=>`
-      <label class="cat-chip">
-        <input type="checkbox" ${locked?'disabled':''} ${isEnabled(c)?'checked':''} data-cat="${c}"/>
-        <span>${c}${locked?'<span class="lock"> (compulsory)</span>':''}</span>
-      </label>`;
-
-    const s = `
-    <div class="card fade">
-      ${logoSVG}
-      <h2 class="title">⚖️ Choose Your Scoring Style</h2>
-      <p class="subtitle">Food is compulsory. Up to <b>4</b> total categories (max 2 custom).</p>
-
-      <div class="grid-2">
-        <div id="optSimple" class="option ${w.mode==='s'?'selected':''}">
-          <div class="option-title">Option 1 — Simple Scoring</div>
-          <div class="option-desc">One overall score (0–10) per guest.</div>
-        </div>
-        <div id="optCat" class="option ${w.mode==='c'?'selected':''}">
-          <div class="option-title">Option 2 — Category Scoring</div>
-          <div class="option-desc">Food + up to 3 more categories (preset or custom).</div>
-        </div>
-      </div>
-
-      <div id="catWrap" class="card" style="margin-top:10px;display:${w.mode==='c'?'block':'none'}">
-        <h3 style="margin-bottom:6px">Select categories</h3>
-        <div class="cat-grid" id="catGrid">
-          ${catItem('Food', true)}
-          ${catAll.filter(c=>c!=='Food').map(c=>catItem(c,false)).join('')}
-          ${ (w.customs||[]).map(c=>`
-            <label class="cat-chip">
-              <input type="checkbox" ${w.cats.includes(c)?'checked':''} data-cat="${c}"/>
-              <span>${c}</span>
-              <button class="btn-ghost" data-remove="${c}" type="button">Remove</button>
-            </label>
-          `).join('')}
-        </div>
-        <div class="row" style="margin-top:10px">
-          <input id="customCat" placeholder="${(w.customs||[]).length<2?'Add custom category (2 max)':'Custom category limit reached'}" ${ (w.customs||[]).length>=2?'disabled':'' }/>
-          <button id="btnAddCustom" class="btn btn-ghost" ${ (w.customs||[]).length>=2?'disabled':'' }>Add</button>
-        </div>
-        <div class="muted" style="margin-top:6px">Enabled: <b id="enabledCount"></b> / 4 total</div>
-      </div>
-
-      <div class="actions">
-        <button id="toGuests" class="btn btn-success btn-lg">Continue to add guests</button>
-        <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
-      </div>
-    </div>`;
-    render(s);
-
-    const updateEnabledCount = ()=>{ $('#enabledCount').textContent = w.cats.length; };
-    updateEnabledCount();
-
-    $('#optSimple').onclick = ()=>{ w.mode='s'; $('#optSimple').classList.add('selected'); $('#optCat').classList.remove('selected'); $('#catWrap').style.display='none'; w.cats=['Food']; updateEnabledCount(); };
-    $('#optCat').onclick = ()=>{ w.mode='c'; $('#optCat').classList.add('selected'); $('#optSimple').classList.remove('selected'); $('#catWrap').style.display='block'; if(!w.cats.includes('Food')) w.cats=['Food',...w.cats]; updateEnabledCount(); };
-    $('#btnAddCustom').onclick = ()=>{
-      const v=($('#customCat').value||'').trim(); if(!v) return;
-      if((w.customs||[]).length>=2){ toast('Max 2 custom'); return; }
-      if([...w.customs, ...w.cats].some(x=>x.toLowerCase()===v.toLowerCase())){ toast('Category exists'); return; }
-      if(!w.customs) w.customs=[];
-      w.customs.push(v);
-      if(!w.cats.includes(v)){
-        if(w.cats.length>=4){ toast('Max 4 total'); return; }
-        w.cats.push(v);
-      }
-      screen2();
-    };
-    $('#catGrid').addEventListener('click', (e)=>{
-      const rm = e.target.getAttribute('data-remove');
-      if(rm){
-        w.customs = (w.customs||[]).filter(x=>x!==rm);
-        w.cats = w.cats.filter(x=>x!==rm);
-        screen2(); return;
-      }
-      const cat = e.target.getAttribute('data-cat');
-      if(!cat) return;
-      if(cat==='Food') return;
-      const on = w.cats.includes(cat);
-      if(on){
-        w.cats = w.cats.filter(x=>x!==cat);
-      }else{
-        if(w.cats.length>=4){ toast('Max 4 total'); return; }
-        w.cats.push(cat);
-      }
-      updateEnabledCount();
-      e.target.checked = !on;
-    });
-
-    $('#toGuests').onclick = ()=> screen3();
-    $('#btnCancel').onclick = ()=> { toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(),900); };
-  }
-
-  // Screen 3: Add Guests (max 6 players total)
-  function screen3(){
-    const w = window.__WIZ__;
-    const s = `
-    <div class="card fade">
-      ${logoSVG}
-      <h2 class="title">👥 Add Your Contestants</h2>
-      <p class="subtitle">You’re listed first. Add your players by name. (Max 6 total)</p>
-
-      <div class="list" id="guestList" style="margin-top:10px">
-        ${w.players.map((n,i)=>`
-          <div class="list-item">
-            <div><strong>${i+1}. ${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
-            <div><button class="btn-ghost" ${i===0?'disabled':''} data-rem="${i}">${i===0?'—':'Remove'}</button></div>
-          </div>`).join('')}
-      </div>
-      <div class="row" style="margin-top:6px">
-        <input id="guestName" placeholder="Guest name"/>
-        <button id="addGuest" class="btn btn-ghost">+ Add</button>
-      </div>
-      <div class="actions">
-        <button id="toLinks" class="btn btn-success btn-lg">Create guest access links</button>
-        <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
-      </div>
-    </div>`;
-    render(s);
-
-    $('#guestList').onclick = (e)=>{
-      const idx = e.target.getAttribute('data-rem');
-      if(idx && +idx!==0){
-        w.players.splice(+idx,1);
-        screen3();
-      }
-    };
-    $('#addGuest').onclick = ()=>{
-      const v = ($('#guestName').value||'').trim(); if(!v) return;
-      if(w.players.length>=6){ toast('Limit 6 participants'); return; }
-      w.players.push(v); $('#guestName').value=''; toast(COPY.organiser.guest_added);
-      screen3();
-    };
-    $('#toLinks').onclick = ()=>{
-      if(w.players.length<2){ toast('Add at least one guest'); return; }
-      screen4();
-    };
-    $('#btnCancel').onclick = ()=> { toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(),900); };
-  }
-
-  // Screen 4: Create game + show copy buttons
-  async function screen4(){
-    dbg('screen4()', { gameId: window.__WIZ__?.gameId, players: window.__WIZ__?.players?.length });
-    const w = window.__WIZ__;
-    if(!w.gameId){
-      w.gameId = randId();
-      const m = { sm: (w.mode==='c' && w.cats.length>0) ? 'c':'s', cats: (w.mode==='c'? w.cats : ['Food']) };
-      const payload = {
-        m, p: w.players,
-        rsvp: Object.fromEntries(w.players.map((_,i)=>[i,0])),
-        d:{}, t:{}, ord:[], rd:0, st:1, sc:{}, cm:{}
-      };
-      await set(dbr(`games/${w.gameId}`), payload);
-      setSession({ gameId: w.gameId, contestantId: 0 });
-      const u = new URLSearchParams(location.search); u.set('game', w.gameId); u.set('c', 0);
-      history.replaceState({},'',`${location.pathname}?${u.toString()}`);
-    }
-    const links = w.players.map((_,i)=> `${baseUrl()}?game=${w.gameId}&c=${i}`);
-    w.links = links;
-
-    const s = `
-    <div class="card fade">
-      ${logoSVG}
-      <h2 class="title">🔗 Invitation Links</h2>
-      <p class="subtitle">Tap to copy and send to each player.</p>
-      <div class="list">
-        ${w.players.map((n,i)=>`
-          <div class="list-item">
-            <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
-            <button class="btn-ghost" data-copy="${i}">Copy Invitation Link</button>
-          </div>`).join('')}
-      </div>
-      <p class="muted" style="margin-top:12px; line-height:1.25">
-  Once you have sent the above links to your guests, click the Next button below to monitor if they have either Accepted or Declined. Once all responses have been received, you can officially begin the Quest!
-</p>
-
-      <div class="actions">
-        <button id="toTracker" class="btn btn-success btn-lg">Next - Choose your hosting date</button>
-        <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
-      </div>
-    </div>`;
-    render(s);
-    appRoot.addEventListener('click', (e)=>{
-      const i = e.target.getAttribute('data-copy');
-      if(i!=null){
-        navigator.clipboard.writeText(w.links[+i]).then(()=> toast(COPY.organiser.link_copied)).catch(()=> toast('Copy failed'));
-      }
-    });
-    $('#toTracker').onclick = ()=> screenInvite(w.gameId, 0);
-    $('#btnCancel').onclick = ()=> { toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(),900); };
-  }
-
-  // Screen 5: RSVP Tracker (organiser)
-  function screen5(){
-    const s = `
-    <div class="card fade">
-      ${logoSVG}
-      <h2 class="title">📅 RSVP Tracker</h2>
-      <p class="subtitle">Once everyone has accepted with a unique date, you can begin.</p>
-      <div id="orgControls"></div>
-      <div id="rsvpList" class="list" style="margin-top:10px"></div>
-      <div class="actions">
-        <button id="startBtn" class="btn btn-success btn-lg" disabled>Let the Games Begin</button>
-        <button id="btnCancel" class="btn btn-danger btn-lg">Cancel</button>
-      </div>
-      <p id="hint" class="muted" style="text-align:center;margin-top:8px">This will unlock when all have accepted and dates are unique.</p>
-    </div>`;
-    render(s);
-
-    const gid = getSession().gameId || qs.get('game');
-    onValue(dbr(`games/${gid}`), async snap=>{
-      if(!snap.exists()) return;
-      const x = snap.val();
-      const my = 0;
-      if(x.rsvp?.[my]===1){
-        $('#orgControls').innerHTML = '';
-      }else{
-        const others = Object.entries(x.d||{}).filter(([k,v])=> +k!==my && v).map(([_,v])=>v);
-        $('#orgControls').innerHTML = `
-          <div class="card" style="background:#fff8db;margin-top:6px">
-            <h3 style="margin-bottom:6px">Pick your own hosting date & time</h3>
-            <div class="row"><input type="date" id="orgDate"/></div>
-            <div class="row" style="margin-top:8px"><label class="muted">Optional time</label><input type="time" id="orgTime"/></div>
-            <div class="actions" style="margin-top:8px">
-              <button id="acceptOrg" class="btn btn-secondary">✅ Accept Invitation</button>
-              <button id="clearOrg" class="btn btn-ghost">Clear</button>
-            </div>
-          </div>`;
-        $('#acceptOrg').onclick = async ()=>{
-          const iso = ($('#orgDate').value||'').trim(); if(!iso) return toast('Pick a date first');
-          if(others.includes(iso)) return toast('That date is already chosen');
-          const tm  = ($('#orgTime').value||'').trim();
-                    await patch(`games/${gid}`, { 
-            rsvp: { ...(x.rsvp||{}), [my]: 1 },
-            d:    { ...(x.d||{}),    [my]: iso },
-            t:    ( ()=>{ const nt = { ...(x.t||{}) }; if (tm) nt[my]=tm; else delete nt[my]; return nt; } )()
-          });
-          toast('📅 Your hosting date is confirmed!');
-        };
-        $('#clearOrg').onclick = async ()=>{
-          const nd={...(x.d||{})}; delete nd[my];
-          const nt={...(x.t||{})}; delete nt[my];
-                    await patch(`games/${gid}`, { d: nd, t: nt, rsvp: { ...(x.rsvp||{}), [my]: 0 } });
-        };
-      }
-
-     // list
-    const listHTML = (x.p||[]).map((n,i)=>{
-    const status = (() => {
-    const acc = x.rsvp?.[i];
-    const iso = (x.d||{})[i];
-    const tm  = (x.t||{})[i];
-    if (acc === 1)  return iso ? `Accepted — ${fmtDateTime(iso, tm)}` : 'Accepted';
-    if (acc === -1) return 'Declined';
-    return iso ? `Proposed — ${fmtDateTime(iso, tm)}` : 'Pending';
-  })();
-    return `
-    <div class="list-item">
-      <div>
-        <div><strong>${n}</strong>${i===0?'<span class="badge">You</span>':''}</div>
-        <div class="muted" style="font-size:.9rem">${status}</div>
-      </div>
-    </div>`;
-}).join('');
-  $('#rsvpList').innerHTML = listHTML;
-  // No copy-link buttons or handlers on Screen 5
-  $('#rsvpList').onclick = null;
-
-      const allAcc = (x.p||[]).every((_,i)=> x.rsvp?.[i]===1 && (x.d||{})[i]);
-      const ds = Object.values(x.d||{});
-      const unique = new Set(ds);
-      const canStart = allAcc && unique.size===ds.length && ds.length>0;
-      $('#startBtn').disabled = !canStart;
-     
-    // Debug-only: flag unexpected duplicate dates among accepted players
-    {
-      const accIdx = (x.p||[]).map((_,i)=> i).filter(i => x.rsvp?.[i]===1 && (x.d||{})[i]);
-      const dates = accIdx.map(i => (x.d||{})[i]);
-      const unique = new Set(dates);
-      if (accIdx.length !== unique.size) dbg('Duplicate date(s) detected among accepted players', { dates });
-    }
-
-      $('#hint').style.display = canStart?'none':'block';
-
-      $('#startBtn').onclick = async ()=>{
-        const order = (x.p||[]).map((_,i)=>({i, dt:(x.d||{})[i]||''})).sort((a,b)=> a.dt===b.dt ? a.i-b.i : (!a.dt?1:!b.dt?-1:a.dt.localeCompare(b.dt))).map(z=>z.i);
-        const smode = x.m?.sm || 's'; const cats = x.m?.cats || ['Food'];
-        const initSc={}, initCm={};
-        (x.p||[]).forEach((_,h)=>{ initSc[h]={}; initCm[h]={}; (x.p||[]).forEach((__,s)=>{ if(s!==h){ initSc[h][s] = (smode==='s' ? null : { c:Object.fromEntries(cats.map(k=>[k,null])), o:null }); initCm[h][s]=''; } }); });
-        await patch(`games/${gid}`, { st:2, rd:0, ord:order, sc:initSc, cm:initCm });
-        setSession({ gameId: gid, contestantId: 0 });
-        route(); toast(COPY.organiser.game_started);
-      };
-      $('#btnCancel').onclick = async ()=>{
-        if(!confirm('Cancel setup?')) return;
-        await remove(dbr(`games/${gid}`)); clearSession(); location.href=baseUrl();
-      };
-    });
-  }
-
-  // Invite view for players (and organiser if not accepted)
-  function screenInvite(gid, cid){
-  // Always show a loader; never let guests stare at a blank screen
-  render(`<div class="card fade"><p class="muted">Loading…</p></div>`);
-    readOnce(`games/${gid}`).then(x=>{
-    if(!x){
-      render(`
-        <div class="card fade">
-          ${logoSVG}
-          <h2 class="title">Game not found</h2>
-          <p class="muted">This invitation may be invalid or the game was removed.</p>
-          <div class="actions"><button class="btn btn-primary" id="btnRetry">Retry</button></div>
-        </div>
-      `);
-      $('#btnRetry').onclick = ()=> route();
-      return;
-    }
-
-    if(x.rsvp?.[cid]===1){
-      const org = (x.p||[])[0] || 'Organiser';
-      const iso = (x.d||{})[cid];
-      const tm  = (x.t||{})[cid];
-      render(`
-        <div class="card fade">
-          ${logoSVG}
-          <h2 class="title">You're all set!</h2>
-          <p class="subtitle">You are a registered participant in ${org}'s Culinary Quest.</p>
-          <div class="list" style="margin-top:8px">
-            <div class="list-item">
-              <div>
-                <div><strong>Your hosting slot</strong></div>
-                <div class="muted" style="font-size:.9rem">${fmtDateTime(iso, tm)}</div>
-              </div>
-            </div>
+      <div class="hero-inner">
+        <div class="hero-card fade">
+          <div class="hero-header">
+            ${logoSVG}
+            <div class="muted" style="font-size:.75rem; text-align:right">Rev: ${REV}</div>
+            <h1 class="hero-title">Welcome, Master of Ceremonies</h1>
+            <p class="hero-sub">Define the rules. Invite your guests. Let the best host win.</p>
           </div>
-          <p class="muted" style="margin-top:8px">If you do find that you need to change, contact ${org} to request a new selection window.</p>
-        </div>
-      `);
-      return;
-    }
 
-    // Not yet accepted → clearer UI + confirmation step
-    const disabled = new Set(
-      Object.entries(x.d||{}).filter(([k,v])=> +k!==cid && v).map(([_,v])=> v)
-    );
-    render(`
-      <div class="card fade">
-        ${logoSVG}
-        <h1 class="title">🍽️ Choose Your Hosting Slot</h1>
-        <p class="subtitle">Welcome${ (x.p||[])[cid]? ', '+x.p[cid] : '' }!</p>
+          <div class="hero-body">
+            <p>How it works:</p>
+            <ol class="hero-ol">
+              <li><b>Pick a scoring style</b> — a simple 0–10, or category-by-category.</li>
+              <li><b>Add your contestants</b> — each receives a personal invite link.</li>
+              <li><b>They RSVP with a unique date</b> — every player hosts once.</li>
+              <li><b>After the final dinner</b> — reveal the results and crown the winner.</li>
+            </ol>
 
-        <div class="card" style="margin-top:8px; min-height:380px">
-          <h3 style="margin-bottom:6px">📅 Hosting date</h3>
-          <div class="row"><input type="date" id="datePick" style="height:44px"></div>
-          <p class="muted" style="margin-top:6px">Only one host per date. Greyed-out days are already taken.</p>
-
-          <h3 style="margin:12px 0 6px">⏰ Start time (optional)</h3>
-          <div class="row"><input type="time" id="timePick" placeholder="19:30" style="height:44px"></div>
-          <p class="muted" style="margin-top:6px">Tip: choose the time guests should arrive.</p>
-
-          <div class="actions" style="margin-top:12px">
-            <button id="btnAccept" class="btn btn-secondary">Continue</button>
-            <button id="btnDecline" class="btn btn-ghost">Decline</button>
+            <div class="row" style="margin-top:14px; justify-content:center">
+              <input id="organiserName" placeholder="Your name (visible to all players)" style="max-width:460px"/>
+            </div>
+            <div class="name-note">Please enter <b>your</b> name as you want others to see it.</div>
           </div>
+
+          <div class="hero-footer">
+            <button id="btnContinue" class="btn btn-success btn-lg">Begin planning</button>
+            <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
+          </div>
+          <p class="hint">You can adjust settings before starting the competition.</p>
         </div>
       </div>
-    `);
+    </div>`;
 
-    setTimeout(()=>{
-      const acceptBtn = document.getElementById('btnAccept');
-      if(acceptBtn){
-        acceptBtn.addEventListener('click', ()=>{
-          const iso = (document.getElementById('datePick').value||'').trim();
-          if(!iso){ toast('Pick a date first'); return; }
-          if(disabled.has(iso)) { toast('That date is already chosen'); return; }
-          const tm = (document.getElementById('timePick').value||'').trim();
-
-          // Confirmation step
-          render(`
-            <div class="card fade">
-              ${logoSVG}
-              <h2 class="title">Confirm your hosting</h2>
-              <p class="subtitle">You are nominating <strong>${fmtDateTime(iso, tm)}</strong>.</p>
-              <div class="actions" style="margin-top:10px">
-                <button id="btnConfirm" class="btn btn-success btn-lg">Confirm</button>
-                <button id="btnCancel" class="btn btn-ghost btn-lg">Cancel</button>
-              </div>
-            </div>
-          `);
-
-          document.getElementById('btnCancel').onclick = ()=> screenInvite(gid, cid);
-          document.getElementById('btnConfirm').onclick = async ()=>{
-            try{
-              await patch(`games/${gid}`, { 
-                rsvp:{...x.rsvp,[cid]:1},
-                d:{...x.d,[cid]:iso},
-                t:(()=>{ const nt={...(x.t||{})}; if (tm) nt[cid]=tm; else delete nt[cid]; return nt; })()
-              });
-              setSession({ gameId: gid, contestantId: cid });
-              const u = new URLSearchParams(location.search); u.set('game', gid); u.set('c', cid);
-              history.replaceState({},'',`${location.pathname}?${u.toString()}`);
-              toast(COPY.player.hosting_date_chosen || 'Hosting date saved');
-              setTimeout(()=> screenInvite(gid, cid), 200);
-            }catch(err){ console.error(err); toast('❌ Could not save — check connection.'); }
-            };
-          });
-      }
-
-      const decBtn = document.getElementById('btnDecline');
-      if(decBtn){
-        decBtn.addEventListener('click', async ()=>{
-          const nd={...(x.d||{})}; delete nd[cid];
-          await patch(`games/${gid}`, { d:nd, rsvp:{...x.rsvp,[cid]:-1} });
-          toast('Declined');
-        });
-      }
-    },50);
-  });
-  }
-
-  // Game screen
-  function screenGame(gid){
-    dbg('screenGame()', { gid });
-    dbg('screenGame(): preparing listener', { gid });
-    if (offGameListener) { offGameListener(); offGameListener = null; }
-    offGameListener = onValue(dbr(`games/${gid}`),(snap)=>{
-      dbg('onValue(games)', { gid, exists: snap.exists() });
-      if(!snap.exists()) return;
-      const x = snap.val();
-      if(x.st!==2){ route(); return; }
-      const ord = x.ord||[]; const rd = x.rd||0; const host = ord.length? ord[rd] : rd;
-      const hostName = (x.p||[])[host] || '';
-      const me = myId();
-      const scored = x.sc?.[host]?.[me];
-      const openAt = votingUnlock((x.d||{})[host], (x.t||{})[host]);
-      const open = !openAt || new Date() >= openAt;
-
-      const catMode = (x.m?.sm==='c'); const cats = x.m?.cats || ['Food'];
-
-      const scoreBlock = (!open) ? `
-        <div class="card banner" style="margin-top:12px">
-          <h3>⏳ Voting not open yet</h3>
-          <p class="muted">${COPY.player.voting_not_open} ${openAt?`Opens ${openAt.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}.`:''}</p>
-        </div>
-      ` : (me===host ? `
-        <div class="card" style="background:#fff8db;margin-top:12px">🍽️ You’re tonight’s host — you don’t score yourself.</div>
-      ` : (scored==null ? (catMode ? `
-        <div class="card" style="background:${'var(--amber)'};margin-top:12px">
-          <h3>Category scoring — ${hostName}</h3>
-          <div id="catInputs">${cats.map(c=>`
-            <div style="margin-top:8px">
-              <label class="muted">${c}</label>
-              <input type="number" min="0" max="10" step="1" data-cat="${c}" />
-            </div>`).join('')}</div>
-          <div style="margin-top:8px"><label class="muted">Comment (optional)</label><textarea id="cmnt"></textarea></div>
-          <div style="margin-top:8px"><button id="submitCat" class="btn btn-secondary">Submit Category Scores</button></div>
-        </div>` : `
-        <div class="card" style="background:${'var(--amber)'};margin-top:12px">
-          <h3>Score ${hostName}</h3>
-          <div style="margin-top:8px"><label class="muted">Your score (0–10)</label><input id="simpleScore" type="number" min="0" max="10" step="1"/></div>
-          <div style="margin-top:8px"><label class="muted">Comment (optional)</label><textarea id="cmnt"></textarea></div>
-          <div style="margin-top:8px"><button id="submitSimple" class="btn btn-secondary">Submit Score</button></div>
-        </div>
-      `) : `<div class="card" style="background:#ecfccb;margin-top:12px">✅ You’ve submitted your score.</div>`));
-
-      const scoredCount = Object.values(x.sc?.[host]||{}).filter(s=> s!=null && (typeof s==='number' || (s&&s.o!=null))).length;
-      const need = Math.max(0, (x.p||[]).length - 1);
-
-      const s = `
-        <div class="card fade">
-          <h2 class="title">🍽️ Culinary Quest</h2>
-          <div class="list-item" style="margin-top:10px">
-            <div>
-              <div style="font-weight:700;font-size:1.25rem">${hostName}</div>
-              <div class="muted" style="margin-top:4px">${(x.d||{})[host]? `Date: ${fmtDateTime((x.d||{})[host], (x.t||{})[host])}` : 'Pending'}</div>
-            </div>
-            <div class="muted">Scored: <strong>${scoredCount}/${need}</strong></div>
-          </div>
-          ${scoreBlock}
-          <div style="margin-top:12px">
-            <h4>Scoring Status</h4>
-            ${(me===0)? (x.p||[]).map((n,i)=> i===host? '' : `<div class="list-item">${n}<div>${ (typeof x.sc?.[host]?.[i]==='number') || (x.sc?.[host]?.[i]?.o!=null) ? '✅ Scored':'⏳ Pending'}</div></div>`).join('')
-                     : `<div class="list-item"><div>Group progress</div><div class="muted">${scoredCount}/${need} submitted</div></div>`}
-          </div>
-                    ${(me===0) ? `
-          <div class="card" id="manageSlots" style="margin-top:12px">
-            <h4>Manage Hosting Slots</h4>
-            <div class="list">
-              ${(x.p||[]).map((n,i)=> i===0 ? '' : `
-                <div class="list-item">
-                  <div>
-                    <div><strong>${n}</strong></div>
-                    <div class="muted" style="font-size:.9rem">
-                      ${
-                        x.rsvp?.[i]===1
-                          ? fmtDateTime((x.d||{})[i], (x.t||{})[i])
-                          : (x.rsvp?.[i]===-1 ? 'Declined' : 'Pending')
-                      }
-                    </div>
-                  </div>
-                  ${ x.rsvp?.[i]===1 ? `<div><button class="btn-ghost" data-reopen="${i}">Reopen</button></div>` : ``}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-          ` : ``}
-          ${(me===0)? `<div style="margin-top:12px">${ canAdvance(x,host)? (x.rd < (x.p||[]).length-1
-            ? `<button id="nextRound" class="btn btn-success">Next Dinner Party →</button>`
-            : `<button id="finalise" class="btn btn-danger">🏆 View Final Results</button>` ) : `<div class="muted">Wait for all scores before progressing.</div>`}
-          </div>` : ``}
-        </div>`;
-      render(s);
-      // Reopen handler (organiser only)
-      if (me===0) {
-        const ms = document.getElementById('manageSlots');
-        if (ms) {
-          ms.onclick = async (e)=>{
-            const idx = e.target.getAttribute('data-reopen');
-            if (idx == null) return;
-            const i = parseInt(idx, 10);
-            if (!Number.isInteger(i) || i <= 0) return;
-            if (!confirm(`Reopen selection for ${(x.p||[])[i]}?`)) return;
-
-            const nd = { ...(x.d||{}) }; delete nd[i];
-            const nt = { ...(x.t||{}) }; delete nt[i];
-            const nr = { ...(x.rsvp||{}) }; nr[i] = 0; // back to pending
-            try{
-              await patch(`games/${gid}`, { d: nd, t: nt, rsvp: nr, ro: { ...(x.ro||{}), [i]: 1 } });
-              toast('Reopened — the player can choose a new date.');
-            }catch(err){
-              console.error(err);
-              toast('❌ Could not reopen — check connection.');
-            }
-          };
-        }
-      }
-
-      if(open && me!==host && scored==null){
-        if(catMode){
-          $('#submitCat').onclick = async ()=>{
-            const vals = {}; let ok = true;
-            for(const c of cats){
-              const el = document.querySelector(`[data-cat="${c}"]`);
-              const v = parseFloat(el.value);
-              if(Number.isNaN(v) || v<0 || v>10){ ok=false; break; }
-              vals[c]=v;
-            }
-            if(!ok){ toast('0–10 for each'); return; }
-            const o = Math.round((Object.values(vals).reduce((a,b)=>a+b,0)/cats.length)*10)/10;
-            const cm = ($('#cmnt').value||'');
-            const sc = x.sc||{}; sc[host]=sc[host]||{}; sc[host][me]={ c:vals, o };
-            const cmn= x.cm||{}; cmn[host]=cmn[host]||{}; cmn[host][me]=cm;
-            await patch(`games/${gid}`, { sc, cm:cmn });
-            toast(COPY.player.score_submitted);
-          };
-        }else{
-          $('#submitSimple').onclick = async ()=>{
-            const v = parseInt($('#simpleScore').value,10);
-            if(Number.isNaN(v)||v<0||v>10){ toast('Score 0–10'); return; }
-            const cm = ($('#cmnt').value||'');
-            const sc = x.sc||{}; sc[host]=sc[host]||{}; sc[host][me]=v;
-            const cmn= x.cm||{}; cmn[host]=cmn[host]||{}; cmn[host][me]=cm;
-            await patch(`games/${gid}`, { sc, cm:cmn });
-            toast(COPY.player.score_submitted);
-          };
-        }
-      }
-
-      if(me===0){
-        $('#nextRound') && ($('#nextRound').onclick = async ()=>{
-          await patch(`games/${gid}`, { rd: (x.rd||0)+1 });
-          toast(COPY.organiser.next_round);
-        });
-        $('#finalise') && ($('#finalise').onclick = async ()=>{
-          await patch(`games/${gid}`, { st:4 });
-          toast(COPY.organiser.all_scores_in);
-        });
-      }
-    });
-  }
-function canAdvance(x,host){
-  if (DEV_MODE) return true; // TEMP: testing only
-  const vals = Object.entries(x.sc?.[host]||{}).filter(([sid,_])=> +sid!==host).map(([_,v])=>v);
-  if(!vals.length) return false;
-  return vals.every(v=> (typeof v==='number') || (v && v.o!=null));
+  render(s);
+  // keep behaviour identical
+  $('#btnContinue').onclick = ()=>{
+    const name = ($('#organiserName').value||'').trim();
+    if(!name){ toast('Please enter your name'); return; }
+    window.__WIZ__ = { name, mode:'s', cats:['Food'], customs:[], players:[name], links:[], gameId:null };
+    screen2();
+  };
+  $('#btnCancel').onclick = ()=>{ toast('👋 Come back soon!'); setTimeout(()=> location.href=baseUrl(), 900); };
 }
+
 
   // Results
   function screenResults(gid){
