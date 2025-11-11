@@ -94,7 +94,7 @@
 .styled .menu-card{ width:100%; max-width:640px; background:var(--card); border:1.15px solid #e7e2d6; border-radius:14px;
   box-shadow:0 24px 60px rgba(0,0,0,.06); padding:30px 34px 26px }
 .styled .menu-head{ text-align:center }
-.styled .menu-logo{ width:220px; height:auto; margin:0 auto 6px; display:block; opacity:.9 }
+.styled .menu-logo{ width:300px; height:auto; margin:0 auto 6px; display:block; opacity:.9 }
 .styled .item-title{ font-family:"Playfair Display", Georgia, serif; text-transform:uppercase; letter-spacing:.14em; margin-top:6px;
   color:var(--ink); font-size:1.3rem; }
 .styled .item-desc{ font-style:italic; color:#4b5563; margin-top:2px; font-size:1.02rem; }
@@ -141,6 +141,25 @@
     box-shadow: 0 30px 70px rgba(0,0,0,.18), 0 2px 0 rgba(0,0,0,.04) inset;
     border-color: rgba(0,0,0,.06);
   }
+</style>
+<style id="menu-tweaks">
+  /* why: remove default browser margin at the very top */
+  body.styled { margin: 0; }
+
+  /* why: move the whole card up; first value is TOP padding */
+  .styled .menu-wrap {
+    align-items: flex-start;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) 20px 24px; /* try 0–12px */
+  }
+
+  /* why: reduce space inside the card above the logo */
+  .styled .menu-card { padding-top: 10px; } /* try 0–14px */
+
+  /* logo size + no extra top margin */
+  .styled .menu-logo { width: 180px; margin-top: 0; }
+
+  /* nudge the “Welcome to Culinary Quest” line under the logo */
+  .styled .menu-head > .item-title { margin-top: 6px !important; } /* lower = closer */
 </style>
 
 </head>
